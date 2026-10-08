@@ -1449,7 +1449,8 @@ function renderMyStats(){
   const wrap=$('#myStatsWrap');
   if(!Me.row){ wrap.hidden=true; return; }
   wrap.hidden=false;
-  $('#myStatsName').textContent=Me.nick+(Me.state==='admin'?' (범쨩)':'');
+  /* 이름이 곧 범쨩이라 뒤에 또 붙이면 "범쨩(범쨩)" 이 된다 */
+  $('#myStatsName').textContent=Me.nick;
   $('#myDays').textContent=String(Me.days).padStart(2,'0');
 
   const mine=DB.posts.filter(p=>p.nickKey===Me.key);
