@@ -528,7 +528,7 @@ dialog::backdrop{
         <section id="hello">
           <div class="sec-head"><h2>인사해요</h2><span class="line"></span>
             <button class="btn btn--sm btn--ghost" type="button" data-all="greetings">전체 보기</button></div>
-          <p class="sec-sub">여기 한 줄 남기셔야 주접 쓰실 수 있어요. 먼저 오신 분들 인사에는 사우나돌 하나씩 얹어주시고요.</p>
+          <p class="sec-sub">여기 한 줄 남기셔야 주접 쓰실 수 있어요. 순서가 좀 깐깐하죠? 그래도 이게 제일 빠릅니다.</p>
           <div class="greet-scroll" id="greetList"></div>
           <div class="row" style="margin-top:var(--s3);">
             <button class="btn btn--primary" type="button" id="greetBtn">인사 남기기</button>
@@ -591,7 +591,7 @@ dialog::backdrop{
     <footer style="margin-top:var(--s8);padding-bottom:var(--s6);text-align:center">
       <p class="t-meta">이 페이지는 팬이 만든 비공식 공간이에요. 금샘탕 공식 채널이 아닙니다.</p>
       <p class="t-meta" style="margin-top:var(--s2)">
-        이상한 글을 보셨다면 글마다 있는 신고 버튼을 눌러주세요. 범쨩이 확인하고 치웁니다.</p>
+        이상한 글을 보셨다면 글마다 있는 신고 버튼을 눌러주세요. 운영진이 확인하고 치웁니다.</p>
       <p class="t-meta" style="margin-top:var(--s2)" id="modeNote"></p>
     </footer>
   </div>
@@ -742,7 +742,7 @@ dialog::backdrop{
 <dialog id="dlgReport"><form method="dialog" class="sheet">
   <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
   <h2>신고하기</h2>
-  <p class="t-meta">범쨩만 봅니다. 글쓴 분에게는 안 보여요.</p>
+  <p class="t-meta">운영진만 봅니다. 글쓴 분에게는 안 보여요.</p>
   <div class="body">
     <div class="field">
       <span class="field-label">어떤 점이 문제인가요?</span>
@@ -751,7 +751,7 @@ dialog::backdrop{
     <div class="field">
       <label for="repMemo">메모 <span class="t-meta">(선택)</span></label>
       <textarea id="repMemo" maxlength="150" style="min-height:70px"
-        placeholder="어디가 문제인지 한 줄만 적어주시면 범쨩이 보기 좋아요."></textarea>
+        placeholder="어디가 문제인지 한 줄만 적어주시면 운영진이 보기 좋아요."></textarea>
     </div>
   </div>
   <div class="actions">
@@ -761,8 +761,8 @@ dialog::backdrop{
 </form></dialog>
 
 <dialog id="dlgWarn"><div class="sheet">
-  <h2>범쨩이 보낸 알림</h2>
-  <p class="t-meta">활동 규칙과 어긋나는 부분이 있어 범쨩이 한마디 남겼습니다.</p>
+  <h2>운영진이 보낸 알림</h2>
+  <p class="t-meta">활동 규칙과 어긋나는 부분이 있어 운영진이 한마디 남겼습니다.</p>
   <div id="warnBody" style="margin-top:var(--s4)"></div>
   <div class="actions">
     <button class="btn btn--primary" type="button" id="warnOk">읽었어요</button>
@@ -946,8 +946,7 @@ const Store={
 };
 
 /* --- 상태 ------------------------------------------------------- */
-const DB={members:[],posts:[],comments:[],likes:[],greetings:[],questions:[],notices:[],reports:[],links:[],warnings:[],
-  greetingLikes:[]};
+const DB={members:[],posts:[],comments:[],likes:[],greetings:[],questions:[],notices:[],reports:[],links:[],warnings:[]};
 const Me={
   nick:null, row:null,
   get state(){ if(!this.row)return 'guest';
@@ -968,7 +967,7 @@ const Me={
 const GATE={
   guest:'이름표 하나만 달고 오세요. 누가 눌렀는지는 알아야 하니까요. 30초면 끝나요.',
   member:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
-  notMine:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 범쨩이 확인합니다.',
+  notMine:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 운영진이 확인합니다.',
   guestQ:'사장님께 질문을 넣으려면 이름표가 필요해요. 익명으로 물으면 사장님이 누구한테 답하시겠어요.',
   memberQ:'팬미팅은 인사를 마친 분들만 들어올 수 있어요. 먼저 통성명부터 하시죠.',
 };
@@ -996,7 +995,7 @@ const ERR={
   PIN_FORMAT:'숫자로만 넣어주세요.',
   ADMIN_EXISTS:'이미 등록된 운영자예요. 비번으로 들어오세요.',
   NOT_ADMIN:'운영자만 할 수 있어요.',
-  NOT_MINE:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 범쨩이 확인합니다.',
+  NOT_MINE:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 운영진이 확인합니다.',
   NEED_GREET:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
   COOLDOWN:'조금만 쉬었다 가요. 1분 뒤에 다시 쓰실 수 있어요.',
   DAILY_LIMIT:'오늘 질문은 이미 한 장 쓰셨어요. 자정이 지나면 새로 한 장 드려요.',
@@ -1051,10 +1050,9 @@ const ApiSupabase={
     return Me.row;
   },
   async refresh(){
-    const [posts,comments,likes,greets,qs,notice,links,members,gLikes]=await Promise.all([
+    const [posts,comments,likes,greets,qs,notice,links,members]=await Promise.all([
       SB.sel('v_posts'),SB.sel('v_comments'),SB.sel('v_likes'),SB.sel('v_greetings'),
-      SB.sel('v_questions'),SB.sel('v_notice'),SB.sel('v_links'),SB.sel('v_members'),
-      SB.sel('v_greeting_likes')]);
+      SB.sel('v_questions'),SB.sel('v_notice'),SB.sel('v_links'),SB.sel('v_members')]);
     const t=s=>s?Date.parse(s):null;
     DB.posts=posts.map(p=>({id:p.id,nick:p.nick,nickKey:p.nick_key,body:p.body,
       createdAt:t(p.created_at),editedAt:t(p.edited_at),pinned:p.pinned,hidden:p.hidden,
@@ -1063,10 +1061,7 @@ const ApiSupabase={
       body:c.body,createdAt:t(c.created_at),hidden:c.hidden}));
     DB.likes=likes.map(l=>({_id:l.post_id+'_'+l.nick_key,postId:l.post_id,nickKey:l.nick_key}));
     DB.greetings=greets.map(g=>({_id:g.member_id,memberId:g.member_id,nick:g.nick,nickKey:g.nick_key,
-      answers:g.answers,createdAt:t(g.created_at),editedAt:t(g.edited_at),hidden:false,
-      likeCount:+g.like_count}));
-    DB.greetingLikes=gLikes.map(l=>({_id:l.greeting_id+'_'+l.nick_key,
-      greetingId:l.greeting_id,nickKey:l.nick_key}));
+      answers:g.answers,createdAt:t(g.created_at),editedAt:t(g.edited_at),hidden:false}));
     DB.questions=qs.map(q=>({_id:q.id,id:q.id,nick:q.nick,nickKey:q.nick_key,day:q.day,body:q.body,
       createdAt:t(q.created_at),answer:q.answer,answeredAt:t(q.answered_at),hidden:false}));
     DB.notices=(notice||[]).map(n=>({_id:'notice_active',active:n.active,body:n.body}));
@@ -1093,7 +1088,6 @@ const ApiSupabase={
   toggleLike(id){ return SB.rpc('fc_toggle_like',{p_token:this.token,p_post_id:id}); },
   createComment(pid,b){ return SB.rpc('fc_create_comment',{p_token:this.token,p_post_id:pid,p_body:b}); },
   deleteComment(id){ return SB.rpc('fc_delete_comment',{p_token:this.token,p_id:id}); },
-  toggleGreetingLike(id){ return SB.rpc('fc_toggle_greeting_like',{p_token:this.token,p_greeting_id:id}); },
   createQuestion(b){ return SB.rpc('fc_create_question',{p_token:this.token,p_body:b}); },
   report(t,id,why){ return SB.rpc('fc_report',{p_token:this.token,p_type:t,p_target:id,p_reason:why}); },
   hidePost(id,h,why){ return SB.rpc('fc_admin_hide_post',{p_token:this.token,p_id:id,p_hidden:h,p_reason:why}); },
@@ -1227,13 +1221,6 @@ const ApiDoc={
     await Store.del('comments',id);
     await Store.patch('posts',c.postId,{commentCount:DB.comments.filter(x=>x.postId===c.postId).length-1}).catch(()=>{});
   },
-  async toggleGreetingLike(greetingId){
-    const id='glike_'+greetingId+'_'+Me.id, had=DB.greetingLikes.some(l=>l._id===id);
-    if(had) await Store.del('greetingLikes',id);
-    else await Store.set('greetingLikes',id,{greetingId,nickKey:Me.key,createdAt:Date.now()});
-    const n=DB.greetingLikes.filter(l=>String(l.greetingId)===String(greetingId)).length+(had?-1:1);
-    return {liked:!had,count:Math.max(0,n)};
-  },
   async createQuestion(body){
     if(!Me.row.greetedAt) throw new Error('NEED_GREET');
     const day=kstDay();
@@ -1257,8 +1244,6 @@ const ApiDoc={
     a?{answer:a,answeredAt:Date.now(),answeredBy:Me.key}:{answer:null,answeredAt:null,answeredBy:null}); },
   async hideGreeting(memberId){
     const g=DB.greetings.find(x=>x._id===memberId||x.memberId===memberId); if(!g) return;
-    for(const l of DB.greetingLikes.filter(l=>String(l.greetingId)===String(g._id)))
-      await Store.del('greetingLikes',l._id);
     await Store.patch('greetings',g._id,{hidden:true});
     const m=DB.members.find(x=>x.nickKey===g.nickKey);
     if(m) await Store.patch('members',m._id,{greetedAt:null});
@@ -1378,7 +1363,7 @@ const RULES=[
   ['홍보는 다른 탕에서','장사, 링크 뿌리기, 맞팔 품앗이 금지. 여긴 사장님 주접만 취급합니다.'],
   ['실제 금샘탕에선 조용한 사우너로','온라인에서 아무리 뜨거워도 매장에선 인사 한 번이면 충분해요. 사진은 찍기 전에 꼭 여쭤보시고, 탈의 구역에선 무조건 안 됩니다.'],
   ['주접은 깊게, 도배는 얕게','같은 글 반복, 연달아 올리기 금지. 사우나도 쉬어가면서 해야 오래 갑니다.'],
-  ['이상하면 신고, 판단은 범쨩이','신고 버튼 한 번이면 범쨩이 보고 숨기거나 지웁니다. 직접 맞붙지 마시고 그냥 눌러주세요.'],
+  ['이상하면 신고, 판단은 운영진이','신고 버튼 한 번이면 운영진이 보고 숨기거나 지웁니다. 직접 맞붙지 마시고 그냥 눌러주세요.'],
 ];
 const GREET_Q=[
   {k:'q1',label:'사장님께 처음 반한 순간은 언제예요?',hint:'입덕 계기. 거창할 필요 없어요.',req:true,
@@ -1390,7 +1375,7 @@ const GREET_Q=[
   {k:'q4',label:'목욕탕 취향이 어떻게 되세요?',hint:'같은 취향 찾으면 반가우니까요.',req:false,
    ph:'열탕 3분 냉탕 1분 무한반복파. 건식은 90도부터 인정합니다'},
 ];
-/* 실제 주소는 확인이 안 돼서 비워둔다. 범쨩이 페이지에서 직접 채운다.
+/* 실제 주소는 확인이 안 돼서 비워둔다. 운영진이 페이지에서 직접 채운다.
    주소가 빈 카드는 렌더에서 빠진다 — 안 열리는 링크를 두느니 안 보이는 게 낫다. */
 const LINKS=[
   {key:'marpple',platform:'마플샵 스토어',icon:'shop',url:'https://marpple.shop/kr/geumsaemtang',
@@ -1493,9 +1478,9 @@ function postCard(p,{hot}={}){
      </div>
      <div class="body">${canSee?esc(p.body):'온도 조절 중인 글이에요.'}</div>`;
   if(p.hidden&&canSee&&p.hiddenReason)
-    c.insertAdjacentHTML('beforeend',`<p class="t-meta">범쨩 메모: ${esc(p.hiddenReason)}</p>`);
+    c.insertAdjacentHTML('beforeend',`<p class="t-meta">운영진 메모: ${esc(p.hiddenReason)}</p>`);
   const foot=el('div','foot');
-  foot.appendChild(stoneButton({id:p.id},'post',likeN,liked));
+  foot.appendChild(stoneButton({id:p.id},likeN,liked));
   const cm=el('button','btn btn--sm btn--ghost','댓글 '+cmtN); cm.type='button';
   cm.addEventListener('click',()=>openDetail(p.id)); foot.appendChild(cm);
   if(mine){
@@ -1542,16 +1527,6 @@ function renderPosts(){
   }else sorted.slice(0,shown).forEach(p=>rl.appendChild(postCard(p)));
   $('#moreRow').hidden=sorted.length<=shown;
 }
-/** 인사 카드 아래 줄: 사우나돌 하나. 대화는 주접 쪽에서 한다. */
-function greetFoot(g){
-  const gid=g.memberId!=null?g.memberId:g._id;
-  const liked=DB.greetingLikes.some(l=>String(l.greetingId)===String(gid)&&l.nickKey===Me.key);
-  const likeN=g.likeCount!=null?g.likeCount
-             :DB.greetingLikes.filter(l=>String(l.greetingId)===String(gid)).length;
-  const foot=el('div','foot'); foot.style.marginTop='var(--s3)';
-  foot.appendChild(stoneButton({id:gid},'greet',likeN,liked));
-  return foot;
-}
 function renderGreetings(){
   const box=$('#greetList'); box.innerHTML='';
   const gs=DB.greetings.filter(g=>!g.hidden).sort((a,b)=>b.createdAt-a.createdAt).slice(0,12);
@@ -1570,7 +1545,6 @@ function renderGreetings(){
       `</div><dl style="margin:0">`+
       GREET_Q.filter(q=>g.answers&&g.answers[q.k]).map(q=>
         `<dt>${esc(q.label)}</dt><dd>${esc(g.answers[q.k])}</dd>`).join('')+`</dl>`;
-    c.appendChild(greetFoot(g));
     if(Me.can('moderate')){
       const h=el('button','btn btn--sm btn--danger','숨기기');h.type='button';
       h.style.marginTop='var(--s3)';
@@ -1654,13 +1628,8 @@ function renderMyStats(){
 
   const mine=DB.posts.filter(p=>p.nickKey===Me.key);
   const mineIds=new Set(mine.map(p=>String(p.id)));
-  /* 인사에 올라온 돌도 같이 센다. 보는 사람에게는 다 같은 공감이다. */
-  const myGreet=DB.greetings.find(g=>g.nickKey===Me.key);
-  const myGid=myGreet?String(myGreet.memberId!=null?myGreet.memberId:myGreet._id):'';
-  const got=DB.likes.filter(l=>mineIds.has(String(l.postId))).length
-          + DB.greetingLikes.filter(l=>String(l.greetingId)===myGid).length;
-  const gave=DB.likes.filter(l=>l.nickKey===Me.key).length
-           + DB.greetingLikes.filter(l=>l.nickKey===Me.key).length;
+  const got=DB.likes.filter(l=>mineIds.has(String(l.postId))).length;
+  const gave=DB.likes.filter(l=>l.nickKey===Me.key).length;
   const cmts=DB.comments.filter(c=>c.nickKey===Me.key&&!c.hidden).length;
   const qs=DB.questions.filter(q=>q.nickKey===Me.key).length;
   const answered=DB.questions.filter(q=>q.nickKey===Me.key&&q.answer).length;
@@ -1798,7 +1767,7 @@ function openNick(){
     d.showModal(); setTimeout(()=>inp.focus(),60);
   });
 }
-/** 범쨩은 예약어다. 처음이면 8자리를 정하고, 그 다음부터는 그 번호로 들어온다.
+/** 운영자 이름은 예약어다. 처음이면 8자리를 정하고, 그 다음부터는 그 번호로 들어온다.
     비번을 코드에 두지 않는 이유 — 소스를 열면 누구나 보이니까. */
 async function adminGate(nick){
   const lk=lockGet('admin');
@@ -1916,19 +1885,18 @@ async function hidePost(p){
 }
 
 /* --- 공감 ------------------------------------------------------- */
-/** 사우나돌 버튼 한 개. 주접과 인사가 같은 모양을 쓴다. */
-function stoneButton(target,kind,likeN,liked){
-  const seed=(kind==='greet'?'g':'p')+target.id;
+/** 사우나돌 버튼 한 개. */
+function stoneButton(target,likeN,liked){
   const b=el('button','like'); b.type='button';
   b.setAttribute('aria-pressed',liked?'true':'false');
   b.setAttribute('aria-label','사우나돌 '+likeN+'개');
   b.innerHTML=`<span class="puff" aria-hidden="true">${ART.steam_b}</span>`
-    +stoneSVG(seed,likeN,24)+`<span class="n">${likeN}</span>`;
+    +stoneSVG(target.id,likeN,24)+`<span class="n">${likeN}</span>`;
   b.title=stoneLabel(likeN);
-  b.addEventListener('click',()=>toggleLike(target,b,kind));
+  b.addEventListener('click',()=>toggleLike(target,b));
   return b;
 }
-async function toggleLike(p,btn,kind){
+async function toggleLike(p,btn){
   if(!await needNick()) return;
   if(banBlocked()) return;
   const on=btn.getAttribute('aria-pressed')==='true', n=btn.querySelector('.n');
@@ -1936,12 +1904,11 @@ async function toggleLike(p,btn,kind){
   n.textContent=String(Math.max(0,(+n.textContent||0)+(on?-1:1)));
   if(!on){btn.classList.remove('pop');void btn.offsetWidth;btn.classList.add('pop');}
   try{
-    const r=kind==='greet' ? await Api.toggleGreetingLike(p.id)
-                           : await Api.toggleLike(p.id);
+    const r=await Api.toggleLike(p.id);
     btn.setAttribute('aria-pressed',r.liked?'true':'false');
     n.textContent=String(r.count);
     const old=btn.querySelector('svg:not(.puff svg)');
-    if(old) old.outerHTML=stoneSVG((kind==='greet'?'g':'p')+p.id,r.count,24);
+    if(old) old.outerHTML=stoneSVG(p.id,r.count,24);
     btn.title=stoneLabel(r.count);
     await reload();
   }catch(e){
@@ -2002,7 +1969,7 @@ function drawComments(box, rows, opt){
     const w=el('div','comment');
     w.innerHTML=`<div class="who"><span class="nick">${esc(c.nick)}</span>
       <span class="t-meta">${esc(ago(c.createdAt))}</span></div>
-      <div class="body">${esc(c.hidden?'운영자가 치운 댓글이에요.':c.body)}</div>`;
+      <div class="body">${esc(c.hidden?'운영진이 치운 댓글이에요.':c.body)}</div>`;
     if((Me.key&&c.nickKey===Me.key)||Me.can('moderate')){
       const d=el('button','btn btn--sm btn--danger','지우기'); d.type='button';
       d.style.marginTop='var(--s2)';
@@ -2067,7 +2034,7 @@ async function submitQuestion(){
   toast('질문 접수! 답이 올지는 사장님 마음이에요.','good'); await reload(); refreshQGate();
 }
 async function answerQ(q){
-  /* 사장님이 직접 들어오셨을 때와, 범쨩이 옮겨 적을 때의 문구가 다르다. */
+  /* 사장님이 직접 들어오셨을 때와, 운영진이 옮겨 적을 때의 문구가 다르다. */
   const own=meIsOwner();
   const a=await textBox(
     own?'사장님 답변 달기':'사장님 답변 옮겨 적기',
@@ -2098,7 +2065,7 @@ async function report(type,id){
     if(d.returnValue!=='ok') return;
     const m=memo.value.trim();
     try{ await Api.report(type,id, m?pick+' · '+m:pick);
-         toast('신고 접수됐어요. 범쨩이 확인할게요.','good'); await reload(); }
+         toast('신고 접수됐어요. 운영진이 확인할게요.','good'); await reload(); }
     catch(e){ toast(errMsg(e),'bad'); }
   };
   d.showModal();
@@ -2204,7 +2171,7 @@ function askBanDays(nick){
   });
 }
 
-/** 비번 바꾸기. 회원은 네 자리, 범쨩은 여덟 자리. */
+/** 비번 바꾸기. 회원은 네 자리, 운영자는 여덟 자리. */
 async function changePin(){
   if(!Me.row) return;
   const admin=Me.state==='admin', len=admin?8:4;
@@ -2220,7 +2187,7 @@ async function changePin(){
   catch(e){ toast(errMsg(e),'bad'); }
 }
 
-/* --- 범쨩 : 회원 관리 ---------------------------------------------- */
+/* --- 운영 : 회원 관리 ---------------------------------------------- */
 /* 회원 목록은 한 번 받아두고, 검색과 거르개는 받아둔 것 안에서만 돈다.
    사람이 늘어도 한 번에 50명씩만 그린다. */
 let memberRows=[], memberShown=50;
@@ -2374,7 +2341,6 @@ function openAll(kind){
         +`</div><dl style="margin:0">`
         +GREET_Q.filter(q=>g.answers&&g.answers[q.k]).map(q=>
           `<dt>${esc(q.label)}</dt><dd>${esc(g.answers[q.k])}</dd>`).join('')+`</dl>`;
-      c.appendChild(greetFoot(g));
       box.appendChild(c);
     });
   }
@@ -2382,7 +2348,7 @@ function openAll(kind){
   $('#dlgAll').showModal();
 }
 
-/* --- 범쨩 : 공지 / 링크 ------------------------------------------ */
+/* --- 운영 : 공지 / 링크 ------------------------------------------ */
 async function editNotice(){
   const cur=DB.notices.find(x=>x._id==='notice_active');
   const b=await textBox('공지 올리기','비우고 저장하면 공지가 내려갑니다.',cur?cur.body:'',300);
@@ -2421,7 +2387,7 @@ function drawSteam(){
 }
 
 /* --- 부팅 ------------------------------------------------------- */
-const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings','greetingLikes'];
+const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings'];
 
 async function boot(){
   drawSteam();

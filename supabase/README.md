@@ -300,14 +300,6 @@ create table if not exists fc_reports (
   unique (member_id, target_type, target_id)
 );
 
--- 인사에 달리는 공감. 댓글은 주접 쪽에서만 받는다.
--- fc_greetings 의 열쇠가 member_id 라서 greeting_id 는 '인사 남긴 사람' 이다.
-create table if not exists fc_greeting_likes (
-  greeting_id bigint      not null references fc_greetings(member_id) on delete cascade,
-  member_id   bigint      not null references fc_members(id) on delete cascade,
-  created_at  timestamptz not null default now(),
-  primary key (greeting_id, member_id)   -- 한 사람이 한 번만
-);
 -- --------------------------------------------- 예전 버전 정리 --
 -- 뷰와 함수의 모양이 바뀌었으므로 먼저 내린다. 스크립트를 다시 돌려도
 -- 깨지지 않게 하려는 것이고, 테이블의 데이터는 건드리지 않는다.
@@ -342,9 +334,12 @@ begin
   end if;
 end $$;
 alter table fc_members add column if not exists admin_hash text;
--- 인사 댓글은 접었다. 깔렸던 적이 있으면 치운다 (공감은 그대로 둔다)
+-- 인사 카드는 보기만 하는 자리로 되돌렸다.
+-- 공감·댓글을 잠깐 깔았던 적이 있으면 여기서 치운다. 없으면 아무 일도 없다.
+drop function if exists fc_toggle_greeting_like(uuid,bigint);
 drop function if exists fc_create_greeting_comment(uuid,bigint,text);
 drop function if exists fc_delete_greeting_comment(uuid,bigint);
+drop table if exists fc_greeting_likes cascade;
 drop table if exists fc_greeting_comments cascade;
 delete from fc_reports where target_type = 'greeting_comment';
 alter table fc_reports drop constraint if exists fc_reports_target_type_check;
@@ -367,7 +362,6 @@ alter table fc_notices enable row level security;
 alter table fc_links enable row level security;
 alter table fc_warnings enable row level security;
 alter table fc_reports enable row level security;
-alter table fc_greeting_likes enable row level security;
 
 -- ------------------------------------------------------------------ 뷰 --
 -- 뷰는 소유자 권한으로 돌아서 RLS를 통과한다. 그래서 여기 적은 컬럼만,
@@ -396,14 +390,9 @@ create view v_likes as
   select l.post_id, m.nick_key from fc_likes l join fc_members m on m.id = l.member_id;
 
 create view v_greetings as
-  select g.member_id, m.nick, m.nick_key, g.answers, g.created_at, g.edited_at,
-         (select count(*) from fc_greeting_likes l where l.greeting_id = g.member_id) as like_count
+  select g.member_id, m.nick, m.nick_key, g.answers, g.created_at, g.edited_at
   from fc_greetings g join fc_members m on m.id = g.member_id
   where not g.hidden and (m.banned_until is null or m.banned_until <= now());
-
-create view v_greeting_likes as
-  select l.greeting_id, m.nick_key
-  from fc_greeting_likes l join fc_members m on m.id = l.member_id;
 
 create view v_questions as
   select q.id, m.nick, m.nick_key, q.day, q.body, q.created_at, q.answer, q.answered_at
@@ -678,22 +667,6 @@ begin
   delete from fc_comments where id = p_id;
 end $$;
 
--- 인사에 달리는 공감 --------------------------------------------------
-create or replace function fc_toggle_greeting_like(p_token uuid, p_greeting_id bigint)
-returns json language plpgsql security definer
-set search_path = public, extensions as $$
-declare v fc_members; liked boolean;
-begin
-  v := fc_auth(p_token);
-  delete from fc_greeting_likes where greeting_id = p_greeting_id and member_id = v.id;
-  if found then liked := false;
-  else insert into fc_greeting_likes (greeting_id, member_id) values (p_greeting_id, v.id);
-       liked := true;
-  end if;
-  return json_build_object('liked', liked,
-    'count', (select count(*) from fc_greeting_likes where greeting_id = p_greeting_id));
-end $$;
-
 -- 팬미팅 : 하루 한 장은 (사람, 한국 날짜) 유니크가 막는다 -----------------
 create or replace function fc_create_question(p_token uuid, p_body text)
 returns bigint language plpgsql security definer
@@ -863,13 +836,11 @@ grant select on v_comments to anon, authenticated;
 grant select on v_likes to anon, authenticated;
 grant select on v_greetings to anon, authenticated;
 grant select on v_questions to anon, authenticated;
-grant select on v_greeting_likes to anon, authenticated;
 grant select on v_notice to anon, authenticated;
 grant select on v_links to anon, authenticated;
 
 revoke all on fc_members, fc_posts, fc_comments, fc_likes, fc_greetings,
-              fc_questions, fc_notices, fc_links, fc_reports, fc_warnings,
-              fc_greeting_likes
+              fc_questions, fc_notices, fc_links, fc_reports, fc_warnings
        from anon, authenticated;
 
 -- 내부용 보조 함수는 바깥에 노출하지 않는다
@@ -890,7 +861,6 @@ grant execute on function fc_delete_post(uuid,bigint) to anon, authenticated;
 grant execute on function fc_toggle_like(uuid,bigint) to anon, authenticated;
 grant execute on function fc_create_comment(uuid,bigint,text) to anon, authenticated;
 grant execute on function fc_delete_comment(uuid,bigint) to anon, authenticated;
-grant execute on function fc_toggle_greeting_like(uuid,bigint) to anon, authenticated;
 grant execute on function fc_create_question(uuid,text) to anon, authenticated;
 grant execute on function fc_report(uuid,text,bigint,text) to anon, authenticated;
 grant execute on function fc_admin_hide_post(uuid,bigint,boolean,text) to anon, authenticated;
