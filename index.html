@@ -80,7 +80,7 @@ button,input,textarea,select{font:inherit;color:inherit;}
   /* 픽셀은 정수 px만 쓴다 — 힌팅이 깨지면 도트감이 죽는다 */
   --t-hero:40px; --t-logo:20px; --t-count:28px;
   --t-h1:24px; --t-h2:20px; --t-h3:16px;
-  --t-body:15px; --t-ui:13px; --t-meta:12px; --t-hand:13px;
+  --t-body:16px; --t-ui:14px; --t-meta:13px; --t-hand:14px;
 
   -webkit-font-smoothing:none;
   -moz-osx-font-smoothing:grayscale;
@@ -90,7 +90,7 @@ button,input,textarea,select{font:inherit;color:inherit;}
   :root{
     --t-hero:64px; --t-logo:24px; --t-count:32px;
     --t-h1:28px; --t-h2:20px; --t-h3:16px;
-    --t-body:17px; --t-ui:15px; --t-meta:13px; --t-hand:15px;
+    --t-body:18px; --t-ui:16px; --t-meta:14px; --t-hand:16px;
   }
 }
 @media (prefers-color-scheme:dark){
@@ -563,6 +563,7 @@ dialog::backdrop{
             <div class="stack" style="gap:var(--s2)">
               <button class="btn btn--sm" type="button" id="noticeBtn">공지 올리기</button>
               <button class="btn btn--sm" type="button" id="reportBtn">신고함 열기</button>
+              <button class="btn btn--sm" type="button" id="memberBtn">회원 관리</button>
             </div>
           </div>
         </div>
@@ -741,6 +742,22 @@ dialog::backdrop{
   </div>
 </form></dialog>
 
+<dialog id="dlgWarn"><div class="sheet">
+  <h2>범쨩이 보낸 알림</h2>
+  <p class="t-meta">활동 규칙과 어긋나는 부분이 있어 범쨩이 한마디 남겼습니다.</p>
+  <div id="warnBody" style="margin-top:var(--s4)"></div>
+  <div class="actions">
+    <button class="btn btn--primary" type="button" id="warnOk">읽었어요</button>
+  </div>
+</div></dialog>
+
+<dialog id="dlgMembers"><div class="sheet">
+  <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
+  <h2>회원 관리</h2>
+  <p class="t-meta">차단하면 그분의 글과 댓글이 전부 가려지고, 아무것도 못 쓰게 됩니다.</p>
+  <div id="memberBody" style="margin-top:var(--s4)"></div>
+</div></dialog>
+
 <dialog id="dlgReports"><div class="sheet">
   <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
   <h2>신고함</h2>
@@ -891,7 +908,7 @@ const Store={
 };
 
 /* --- 상태 ------------------------------------------------------- */
-const DB={members:[],posts:[],comments:[],likes:[],greetings:[],questions:[],notices:[],reports:[],links:[]};
+const DB={members:[],posts:[],comments:[],likes:[],greetings:[],questions:[],notices:[],reports:[],links:[],warnings:[]};
 const Me={
   nick:null, row:null,
   get state(){ if(!this.row)return 'guest';
@@ -1035,6 +1052,11 @@ const ApiSupabase={
   setNotice(b){ return SB.rpc('fc_admin_notice',{p_token:this.token,p_body:b}); },
   setLinks(u){ return SB.rpc('fc_admin_links',{p_token:this.token,p_urls:u}); },
   listReports(){ return SB.rpc('fc_admin_reports',{p_token:this.token}); },
+  warn(mid,body){ return SB.rpc('fc_admin_warn',{p_token:this.token,p_member_id:mid,p_body:body}); },
+  ban(mid,on){ return SB.rpc('fc_admin_ban',{p_token:this.token,p_member_id:mid,p_banned:on}); },
+  listMembers(){ return SB.rpc('fc_admin_members',{p_token:this.token}); },
+  myWarnings(){ return SB.rpc('fc_my_warnings',{p_token:this.token}); },
+  ackWarning(id){ return SB.rpc('fc_ack_warning',{p_token:this.token,p_id:id}); },
   clearReport(id){ return SB.rpc('fc_admin_clear_report',{p_token:this.token,p_id:id}); },
   signOut(){ this.token=null; try{localStorage.removeItem('udfc.token');}catch(e){} },
 };
@@ -1052,6 +1074,8 @@ const ApiDoc={
     if(!saved) return null;
     const id='m_'+nickId(saved), row=await Store.get('members',id);
     if(!row){ try{localStorage.removeItem(LS.nick);}catch(e){} return null; }
+    if(row.banned){ try{localStorage.removeItem(LS.nick);}catch(e){}
+      toast('지금은 냉탕에 계십니다.','bad'); return null; }
     return this._row(id,row);
   },
   async join(nick,pin){
@@ -1168,8 +1192,37 @@ const ApiDoc={
   },
   setNotice(b){ return Store.set('notices','notice_active',{active:!!b,body:b,updatedAt:Date.now(),updatedBy:Me.key}); },
   setLinks(u){ return Store.set('links','links_site',Object.assign({},u,{updatedAt:Date.now()})); },
-  async listReports(){ return DB.reports.map(r=>({id:r._id,targetType:r.targetType,targetId:r.targetId,
-    reason:r.reason,createdAt:r.createdAt,nick:r.nick||r.nickKey})); },
+  async listReports(){
+    return DB.reports.map(r=>{
+      const t = r.targetType==='post' ? DB.posts.find(x=>String(x.id)===String(r.targetId))
+                                      : DB.comments.find(x=>String(x._id)===String(r.targetId));
+      const a = t && DB.members.find(m=>m.nickKey===t.nickKey);
+      return {id:r._id,targetType:r.targetType,targetId:r.targetId,reason:r.reason,
+              createdAt:r.createdAt,nick:r.nick||r.nickKey,
+              authorId:a&&a._id,authorNick:a&&a.nick,authorBanned:!!(a&&a.banned),
+              authorWarnings:DB.warnings.filter(w=>a&&w.memberId===a._id).length};
+    });
+  },
+  async warn(mid,body){
+    await Store.set('warnings','w_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      {memberId:mid,body:body||null,createdAt:Date.now(),readAt:null});
+  },
+  async ban(mid,on){
+    const me=DB.members.find(m=>m._id===mid);
+    if(me&&me.isAdmin) throw new Error('NOT_YOURSELF');
+    await Store.patch('members',mid,{banned:!!on});
+  },
+  async listMembers(){
+    return DB.members.map(m=>({id:m._id,nick:m.nick,nickKey:m.nickKey,joinedAt:m.joinedAt,
+      greetedAt:m.greetedAt,isAdmin:!!m.isAdmin,banned:!!m.banned,
+      posts:DB.posts.filter(p=>p.nickKey===m.nickKey).length,
+      warnings:DB.warnings.filter(w=>w.memberId===m._id).length}));
+  },
+  async myWarnings(){
+    return DB.warnings.filter(w=>w.memberId===(Me.row&&Me.row._id)&&!w.readAt)
+      .map(w=>({id:w._id,body:w.body,createdAt:w.createdAt}));
+  },
+  async ackWarning(id){ await Store.patch('warnings',id,{readAt:Date.now()}); },
   clearReport(id){ return Store.del('reports',id); },
   signOut(){ try{ localStorage.removeItem(LS.nick); }catch(e){} },
 };
@@ -1596,7 +1649,7 @@ function openNick(){
             : errMsg(e2));
         }
       }
-      await reload(); renderAll(); res(true);
+      await reload(); renderAll(); checkWarnings(); res(true);
     };
     d.showModal(); setTimeout(()=>inp.focus(),60);
   });
@@ -1893,7 +1946,38 @@ async function openReports(){
           ? `<span class="t-meta">${esc(target.nick)}</span><br>${esc(target.body||'(숨겨진 글이에요)')}`
           : '<span class="t-meta">대상이 이미 사라졌어요.</span>'}</div>`;
 
+    if(r.authorNick){
+      const who=el('div','rep-head'); who.style.marginTop='var(--s3)';
+      who.innerHTML=`<span class="t-meta">글쓴 사람</span>
+        <span class="nick">${esc(r.authorNick)}</span>`
+        +(r.authorWarnings?`<span class="badge">경고 ${r.authorWarnings}회</span>`:'')
+        +(r.authorBanned?'<span class="badge badge--admin">차단됨</span>':'');
+      c.appendChild(who);
+    }
+
     const foot=el('div','foot'); foot.style.marginTop='var(--s3)';
+    if(r.authorId){
+      const warn=el('button','btn btn--sm','경고 보내기'); warn.type='button';
+      warn.addEventListener('click',async()=>{
+        const m=await textBox('경고 보내기',
+          '그분에게만 보입니다. 비워두면 규칙을 다시 읽어달라는 기본 안내만 갑니다.','',150);
+        if(m===null) return;
+        try{ await Api.warn(r.authorId,m); toast('경고를 보냈습니다','good'); await reload(); openReports(); }
+        catch(e){ toast(errMsg(e),'bad'); }});
+      foot.appendChild(warn);
+
+      const ban=el('button','btn btn--sm btn--danger',r.authorBanned?'차단 풀기':'계정 차단');
+      ban.type='button';
+      ban.addEventListener('click',async()=>{
+        const on=!r.authorBanned;
+        if(on&&!await confirmBox('계정 차단',
+          esc(r.authorNick)+'님의 글과 댓글이 전부 가려지고, 더는 아무것도 못 쓰게 됩니다.',
+          '차단할래요','취소')) return;
+        try{ await Api.ban(r.authorId,on); toast(on?'차단했습니다':'차단을 풀었습니다','good');
+             await reload(); openReports(); }
+        catch(e){ toast(errMsg(e),'bad'); }});
+      foot.appendChild(ban);
+    }
     if(target&&isPost){
       const go=el('button','btn btn--sm','글 보기'); go.type='button';
       go.addEventListener('click',()=>{ $('#dlgReports').close(); openDetail(target.id); });
@@ -1911,6 +1995,69 @@ async function openReports(){
     c.appendChild(foot); w.appendChild(c); box.appendChild(w);
   });
 }
+
+/* --- 범쨩 : 회원 관리 ---------------------------------------------- */
+async function openMembers(){
+  const box=$('#memberBody'); box.innerHTML='';
+  let rows=[]; try{ rows=await Api.listMembers()||[]; }catch(e){ toast(errMsg(e),'bad'); }
+  $('#dlgMembers').showModal();
+  if(!rows.length){ box.appendChild(emptyBox('아직 아무도 안 왔어요.','','','sleep')); return; }
+  rows.forEach(m=>{
+    const w=el('div','card-wrap'), c=el('div','card');
+    c.innerHTML=`<div class="rep-head">
+        <span class="nick">${esc(m.nick)}</span>
+        ${m.isAdmin?'<span class="badge badge--admin">범쨩</span>':''}
+        ${m.banned?'<span class="badge badge--admin">차단됨</span>':''}
+        ${m.warnings?`<span class="badge">경고 ${m.warnings}회</span>`:''}
+      </div>
+      <p class="t-meta">${daysSince(kstDay(Date.parse(m.joinedAt)||m.joinedAt))}일째 ·
+        주접 ${m.posts}개 · ${m.greetedAt?'인사 완료':'인사 전'}</p>`;
+    if(!m.isAdmin){
+      const foot=el('div','foot'); foot.style.marginTop='var(--s3)';
+      const warn=el('button','btn btn--sm','경고 보내기'); warn.type='button';
+      warn.addEventListener('click',async()=>{
+        const t=await textBox('경고 보내기','그분에게만 보입니다.','',150);
+        if(t===null) return;
+        try{ await Api.warn(m.id,t); toast('경고를 보냈습니다','good'); await reload(); openMembers(); }
+        catch(e){ toast(errMsg(e),'bad'); }});
+      foot.appendChild(warn);
+      const ban=el('button','btn btn--sm btn--danger',m.banned?'차단 풀기':'계정 차단'); ban.type='button';
+      ban.addEventListener('click',async()=>{
+        const on=!m.banned;
+        if(on&&!await confirmBox('계정 차단',
+          m.nick+'님의 글과 댓글이 전부 가려지고, 더는 아무것도 못 쓰게 됩니다.','차단할래요','취소')) return;
+        try{ await Api.ban(m.id,on); toast(on?'차단했습니다':'차단을 풀었습니다','good');
+             await reload(); openMembers(); }
+        catch(e){ toast(errMsg(e),'bad'); }});
+      foot.appendChild(ban);
+      c.appendChild(foot);
+    }
+    w.appendChild(c); box.appendChild(w);
+  });
+}
+
+/* --- 받은 경고 보여주기 ---------------------------------------------- */
+let warnQueue=[];
+async function checkWarnings(){
+  if(!Me.row) return;
+  try{ warnQueue=await Api.myWarnings()||[]; }catch(e){ return; }
+  if(warnQueue.length) showWarning();
+}
+function showWarning(){
+  const w=warnQueue[0]; if(!w) return;
+  const box=$('#warnBody'); box.innerHTML='';
+  const c=el('div','notice');
+  c.innerHTML=`<strong>경고</strong><span>${esc(w.body||'활동 규칙을 한 번만 더 읽어주세요.')}</span>`;
+  box.appendChild(c);
+  const t=el('p','t-meta',ago(Date.parse(w.createdAt)||w.createdAt));
+  t.style.marginTop='var(--s2)'; box.appendChild(t);
+  $('#dlgWarn').showModal();
+}
+$('#warnOk').addEventListener('click',async()=>{
+  const w=warnQueue.shift(); $('#dlgWarn').close();
+  if(w){ try{ await Api.ackWarning(w.id); }catch(e){} }
+  if(warnQueue.length) setTimeout(showWarning,300);
+});
 
 /* --- 전체 보기 ------------------------------------------------------- */
 function openAll(kind){
@@ -1989,7 +2136,7 @@ function drawSteam(){
 }
 
 /* --- 부팅 ------------------------------------------------------- */
-const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links'];
+const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings'];
 const POLL_MS=15000;
 
 async function boot(){
@@ -2021,7 +2168,7 @@ async function boot(){
                                 if($('#dlgDetail').open) drawDetail(); }catch(e){} };
     const me=await Api.restore();
     if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
-    renderAll();
+    renderAll(); checkWarnings();
     setInterval(pull,POLL_MS);
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pull(); });
   }else{
@@ -2033,7 +2180,7 @@ async function boot(){
     }));
     const me=await Api.restore();
     if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
-    renderAll();
+    renderAll(); checkWarnings();
   }
 
   /* 입덕 일수와 팬미팅 카운트다운은 한국 자정에 맞춰 갱신된다 */
@@ -2063,6 +2210,7 @@ $('#qSubmit').addEventListener('click',submitQuestion);
 $('#moreBtn').addEventListener('click',()=>{shown+=PAGE;renderPosts();});
 $('#noticeBtn').addEventListener('click',editNotice);
 $('#reportBtn').addEventListener('click',openReports);
+$('#memberBtn').addEventListener('click',openMembers);
 $('#linkEditBtn').addEventListener('click',openLinkEditor);
 $('#postBody').addEventListener('input',()=>updCount('#postBody','#postCount',LIM.POST));
 $('#qBody').addEventListener('input',()=>updCount('#qBody','#qCount',LIM.Q));

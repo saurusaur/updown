@@ -92,6 +92,16 @@ create table if not exists fc_links (
   updated_at timestamptz not null default now()
 );
 
+-- 범쨩이 보낸 경고. 받은 본인과 범쨩만 볼 수 있다 (뷰로 안 내보낸다).
+create table if not exists fc_warnings (
+  id         bigserial primary key,
+  member_id  bigint      not null references fc_members(id) on delete cascade,
+  body       text,
+  created_at timestamptz not null default now(),
+  read_at    timestamptz
+);
+create index if not exists fc_warnings_member on fc_warnings (member_id);
+
 create table if not exists fc_reports (
   id          bigserial primary key,
   member_id   bigint      not null references fc_members(id) on delete cascade,
@@ -116,6 +126,7 @@ drop function if exists fc_login(text,text);
 drop function if exists fc_admin_login(text);
 drop function if exists fc_check_pin(fc_members,text);
 drop function if exists fc_profile(fc_members);
+drop function if exists fc_admin_reports(uuid);
 -- 비밀번호 칼럼 두 개. 회원 4자리와 범쨩 8자리는 역할이 달라 따로 둔다.
 alter table fc_members add column if not exists pin_hash   text;
 alter table fc_members add column if not exists admin_hash text;
@@ -134,6 +145,7 @@ alter table fc_greetings enable row level security;
 alter table fc_questions enable row level security;
 alter table fc_notices enable row level security;
 alter table fc_links enable row level security;
+alter table fc_warnings enable row level security;
 alter table fc_reports enable row level security;
 
 -- ------------------------------------------------------------------ 뷰 --
@@ -462,12 +474,73 @@ begin perform fc_need_admin(p_token);
   on conflict (id) do update set urls = excluded.urls, updated_at = now();
 end $$;
 
+-- 경고 보내기 / 받기 ----------------------------------------------------
+create or replace function fc_admin_warn(p_token uuid, p_member_id bigint, p_body text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin perform fc_need_admin(p_token);
+  insert into fc_warnings (member_id, body)
+  values (p_member_id, nullif(btrim(coalesce(p_body,'')),''));
+end $$;
+
+-- 내가 받은, 아직 안 읽은 경고
+create or replace function fc_my_warnings(p_token uuid)
+returns setof json language plpgsql stable security definer
+set search_path = public, extensions as $$
+declare v fc_members;
+begin
+  v := fc_auth(p_token);
+  return query select json_build_object('id', w.id, 'body', w.body, 'createdAt', w.created_at)
+                 from fc_warnings w
+                where w.member_id = v.id and w.read_at is null
+                order by w.created_at;
+end $$;
+
+create or replace function fc_ack_warning(p_token uuid, p_id bigint)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+declare v fc_members;
+begin
+  v := fc_auth(p_token);
+  update fc_warnings set read_at = now() where id = p_id and member_id = v.id;
+end $$;
+
+-- 차단 / 차단 풀기 -------------------------------------------------------
+create or replace function fc_admin_ban(p_token uuid, p_member_id bigint, p_banned boolean)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+declare a fc_members;
+begin
+  a := fc_need_admin(p_token);
+  if p_member_id = a.id then raise exception 'NOT_YOURSELF'; end if;
+  update fc_members set banned = p_banned where id = p_member_id and not is_admin;
+end $$;
+
+-- 범쨩이 보는 회원 목록 (차단된 사람까지)
+create or replace function fc_admin_members(p_token uuid)
+returns setof json language plpgsql stable security definer
+set search_path = public, extensions as $$
+begin perform fc_need_admin(p_token);
+  return query
+    select json_build_object('id', m.id, 'nick', m.nick, 'nickKey', m.nick_key,
+      'joinedAt', m.joined_at, 'greetedAt', m.greeted_at, 'isAdmin', m.is_admin,
+      'banned', m.banned,
+      'posts', (select count(*) from fc_posts p where p.member_id = m.id),
+      'warnings', (select count(*) from fc_warnings w where w.member_id = m.id))
+    from fc_members m order by m.banned desc, m.joined_at;
+end $$;
+
 create or replace function fc_admin_reports(p_token uuid)
 returns setof json language plpgsql security definer set search_path = public, extensions as $$
 begin perform fc_need_admin(p_token);
   return query select json_build_object('id', r.id, 'targetType', r.target_type,
-    'targetId', r.target_id, 'reason', r.reason, 'createdAt', r.created_at, 'nick', m.nick)
-  from fc_reports r join fc_members m on m.id = r.member_id order by r.created_at desc;
+    'targetId', r.target_id, 'reason', r.reason, 'createdAt', r.created_at, 'nick', m.nick,
+    'authorId', a.id, 'authorNick', a.nick, 'authorBanned', a.banned,
+    'authorWarnings', (select count(*) from fc_warnings w where w.member_id = a.id))
+  from fc_reports r
+  join fc_members m on m.id = r.member_id
+  left join fc_members a on a.id = case
+        when r.target_type = 'post'    then (select p.member_id from fc_posts    p where p.id = r.target_id)
+        when r.target_type = 'comment' then (select c.member_id from fc_comments c where c.id = r.target_id)
+      end
+  order by r.created_at desc;
 end $$;
 
 create or replace function fc_admin_clear_report(p_token uuid, p_id bigint)
@@ -486,7 +559,8 @@ grant select on v_notice to anon, authenticated;
 grant select on v_links to anon, authenticated;
 
 revoke all on fc_members, fc_posts, fc_comments, fc_likes, fc_greetings,
-              fc_questions, fc_notices, fc_links, fc_reports from anon, authenticated;
+              fc_questions, fc_notices, fc_links, fc_reports, fc_warnings
+       from anon, authenticated;
 
 -- 내부용 보조 함수는 바깥에 노출하지 않는다
 revoke all on function fc_auth(uuid), fc_need_admin(uuid), fc_profile(fc_members)
@@ -514,6 +588,11 @@ grant execute on function fc_admin_hide_greeting(uuid,bigint) to anon, authentic
 grant execute on function fc_admin_notice(uuid,text) to anon, authenticated;
 grant execute on function fc_admin_links(uuid,jsonb) to anon, authenticated;
 grant execute on function fc_admin_reports(uuid) to anon, authenticated;
+grant execute on function fc_admin_warn(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_my_warnings(uuid) to anon, authenticated;
+grant execute on function fc_ack_warning(uuid,bigint) to anon, authenticated;
+grant execute on function fc_admin_ban(uuid,bigint,boolean) to anon, authenticated;
+grant execute on function fc_admin_members(uuid) to anon, authenticated;
 grant execute on function fc_admin_clear_report(uuid,bigint) to anon, authenticated;
 
 insert into fc_notices (id, body, active) values (1, null, false) on conflict do nothing;
