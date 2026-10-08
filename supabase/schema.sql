@@ -354,7 +354,21 @@ begin
   if not fc_is_admin_nick(k) then raise exception 'NOT_ADMIN'; end if;
   if p_pin !~ '^\d{8}$'      then raise exception 'PIN_FORMAT'; end if;
   select * into v from fc_members where nick_key = k;
-  if v.id is not null then raise exception 'ADMIN_EXISTS'; end if;
+  if v.id is not null then
+    -- 8자리가 이미 걸려 있으면 주인이 있는 것이다
+    if v.admin_hash is not null then raise exception 'ADMIN_EXISTS'; end if;
+    -- 예약어가 되기 전에 그 이름으로 가입한 계정이 있으면 그 자리를 그대로 쓴다.
+    -- 글과 공감이 딸려 있으니 지우지 않고 운영자로 올린다.
+    -- 4자리 문은 닫는다. 운영자는 8자리로만 들어온다.
+    update fc_members
+       set admin_hash = crypt(p_pin, gen_salt('bf', 10)),
+           is_admin   = true,
+           pin_hash   = null,
+           greeted_at = coalesce(greeted_at, now())
+     where id = v.id
+    returning * into v;
+    return fc_profile(v);
+  end if;
   insert into fc_members (nick, nick_key, admin_hash, is_admin, greeted_at)
   values (btrim(p_nick), k, crypt(p_pin, gen_salt('bf', 10)), true, now())
   returning * into v;

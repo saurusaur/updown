@@ -178,6 +178,19 @@ update fc_members
 20초마다 저절로 다시 시도하고, 버튼으로 바로 다시 할 수도 있습니다. 서버가 돌아오면
 새로고침 없이 그 자리에서 이어집니다.
 
+**운영자 이름인데 `운영자` 딱지가 안 붙어요** — 그 이름이 예약어가 되기 전에 누군가
+평범하게 가입해둔 겁니다. 이름표 달기에서 그 이름으로 8자리를 등록하면 그 계정이
+그대로 운영자로 올라갑니다 (쓰던 글과 공감은 남고, 4자리 문은 닫힙니다).
+대시보드에서 바로 올리려면 SQL Editor 에 이 한 줄:
+
+```sql
+update fc_members
+   set is_admin = true,
+       admin_hash = extensions.crypt('여덟자리', extensions.gen_salt('bf', 10)),
+       pin_hash = null
+ where nick_key = fc_norm('빵야씨');
+```
+
 **글이 안 보여요** — 브라우저 개발자도구 Network 탭에서 `v_posts` 요청이 200 인지 보세요.
 401/404 면 URL 이나 키가 틀린 겁니다.
 
@@ -556,7 +569,21 @@ begin
   if not fc_is_admin_nick(k) then raise exception 'NOT_ADMIN'; end if;
   if p_pin !~ '^\d{8}$'      then raise exception 'PIN_FORMAT'; end if;
   select * into v from fc_members where nick_key = k;
-  if v.id is not null then raise exception 'ADMIN_EXISTS'; end if;
+  if v.id is not null then
+    -- 8자리가 이미 걸려 있으면 주인이 있는 것이다
+    if v.admin_hash is not null then raise exception 'ADMIN_EXISTS'; end if;
+    -- 예약어가 되기 전에 그 이름으로 가입한 계정이 있으면 그 자리를 그대로 쓴다.
+    -- 글과 공감이 딸려 있으니 지우지 않고 운영자로 올린다.
+    -- 4자리 문은 닫는다. 운영자는 8자리로만 들어온다.
+    update fc_members
+       set admin_hash = crypt(p_pin, gen_salt('bf', 10)),
+           is_admin   = true,
+           pin_hash   = null,
+           greeted_at = coalesce(greeted_at, now())
+     where id = v.id
+    returning * into v;
+    return fc_profile(v);
+  end if;
   insert into fc_members (nick, nick_key, admin_hash, is_admin, greeted_at)
   values (btrim(p_nick), k, crypt(p_pin, gen_salt('bf', 10)), true, now())
   returning * into v;

@@ -1036,6 +1036,9 @@ function errMsg(e){
 }
 
 /* --- Supabase 호출 ---------------------------------------------- */
+/** 목록을 받는 자리. 서버가 한 건만 줄 때 배열이 아닐 수도 있어 감싸둔다. */
+const asList=x=>Array.isArray(x)?x:(x==null?[]:[x]);
+
 const SB={
   async call(path,opts){
     const r=await fetch(SUPABASE.url.replace(/\/$/,'')+path, Object.assign({
@@ -1171,7 +1174,17 @@ const ApiDoc={
   async adminClaim(nick,pin){
     if(!isAdminNick(nick)) throw new Error('NOT_ADMIN');
     const id='m_'+nickId(nick);
-    if(await Store.get('members',id)) throw new Error('ADMIN_EXISTS');
+    const had=await Store.get('members',id);
+    /* 예약어가 되기 전에 그 이름으로 가입한 계정이 있으면 그 자리를 올려준다.
+       이미 8자리가 걸려 있으면 주인이 있는 것이다. */
+    if(had&&had.adminHash) throw new Error('ADMIN_EXISTS');
+    if(had){
+      await Store.patch('members',id,{adminHash:await hashPin(pin,nick),isAdmin:true,
+        pinHash:null,greetedAt:had.greetedAt||Date.now(),updatedAt:Date.now()});
+      const row=await Store.get('members',id);
+      try{ localStorage.setItem(LS.nick,nick); }catch(e){}
+      return this._row(id,row);
+    }
     const now=Date.now();
     const row=await Store.set('members',id,{nick,nickKey:nickKey(nick),joinedAt:now,
       joinedDay:kstDay(now),adminHash:await hashPin(pin,nick),greetedAt:now,
@@ -2096,7 +2109,7 @@ async function report(type,id){
 }
 async function openReports(){
   const box=$('#reportBody'); box.innerHTML='';
-  let rows=[]; try{ rows=await Api.listReports()||[]; }catch(e){ toast(errMsg(e),'bad'); }
+  let rows=[]; try{ rows=asList(await Api.listReports()); }catch(e){ toast(errMsg(e),'bad'); }
   $('#dlgReports').showModal();
   if(!rows.length){ box.appendChild(emptyBox('신고 없음. 평화로운 탕이네요.','','','sleep')); return; }
 
@@ -2233,7 +2246,7 @@ async function openMembers(){
 }
 /** 서버에서 다시 받아온다. 검색어와 거르개는 그대로 둔다. */
 async function loadMembers(){
-  try{ memberRows=await Api.listMembers()||[]; }
+  try{ memberRows=asList(await Api.listMembers()); }
   catch(e){ toast(errMsg(e),'bad'); memberRows=[]; }
   drawMembers();
 }
@@ -2314,7 +2327,7 @@ function memberCard(m){
 let warnQueue=[];
 async function checkWarnings(){
   if(!Me.row) return;
-  try{ warnQueue=await Api.myWarnings()||[]; }catch(e){ return; }
+  try{ warnQueue=asList(await Api.myWarnings()); }catch(e){ return; }
   if(warnQueue.length) showWarning();
 }
 function showWarning(){
