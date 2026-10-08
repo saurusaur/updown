@@ -1026,7 +1026,7 @@ const LINKS=[
   {key:'blog',     platform:'블로그',              icon:'blog', url:'https://m.blog.naver.com/miontang',
    desc:'사우나 마니아의 꿀팁들을 볼 수 있어요'},
   {key:'youtube',  platform:'유튜브',              icon:'yt',   url:'https://youtube.com/@geumsaemtang',
-   desc:'지금이 타이밍! 저점매수 하세요'},
+   desc:'요즘 좀 조용해요. 사장님의 예전이 궁금하다면?'},
   {key:'book',     platform:'집앞목욕탕 금샘탕편', icon:'book', url:'https://m.yes24.com/goods/detail/128861165',
    desc:'금샘탕의 이야기가 한가득 담겼어요'},
 ];
