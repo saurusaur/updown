@@ -1672,6 +1672,30 @@ function renderMe(){
 function renderAll(){ renderNotice();renderPosts();renderGreetings();renderQuestions();
   renderLinks();renderStats();renderMe(); }
 
+/* 지금 어딘가에 타이핑 중인가.
+   다시 그리면 입력창이 새 것으로 바뀌어 포커스가 날아간다.
+   폰에서는 그때 키보드가 닫히고 쓰던 글자도 같이 사라진다. */
+function isTyping(){
+  const a=document.activeElement;
+  if(!a) return false;
+  if(a.isContentEditable) return true;
+  if(a.tagName==='TEXTAREA') return true;
+  return a.tagName==='INPUT'
+      && !/^(button|submit|reset|checkbox|radio|file)$/i.test(a.type||'text');
+}
+/** 화면 전체 + 열려 있는 댓글창을 다시 그린다. */
+function paintAll(){ renderAll(); if($('#dlgDetail').open) drawDetail(); }
+/** 타이핑 중이면 미뤄두고, 입력창에서 손을 뗄 때 한 번 그린다. */
+let paintPending=false;
+function paintSoon(){
+  if(isTyping()){ paintPending=true; return; }
+  paintPending=false; paintAll();
+}
+document.addEventListener('focusout',()=>{
+  /* focusout 은 다음 입력창으로 옮겨가는 중에도 뜬다. 한 틱 기다렸다 확인한다. */
+  setTimeout(()=>{ if(paintPending) paintSoon(); },0);
+});
+
 /* --- 신원 확보 --------------------------------------------------- */
 async function needNick(){
   if(Me.row) return true;
@@ -1882,6 +1906,8 @@ function updCount(sel,out,max){
 
 /* --- 글 상세 + 댓글 ---------------------------------------------- */
 let detailId=null;
+/* 쓰다 만 댓글은 글 단위로 들고 있는다. 다시 그려도, 닫았다 열어도 남는다. */
+const cmtDraft=Object.create(null);
 function openDetail(id){ detailId=id; drawDetail(); $('#dlgDetail').showModal(); }
 function drawDetail(){
   const p=DB.posts.find(x=>x.id===detailId); const box=$('#detailBody');
@@ -1925,13 +1951,17 @@ function drawDetail(){
   const f=el('div','field'); f.style.marginTop='var(--s5)';
   f.innerHTML=`<label for="cmtIn">한마디 얹기</label>
     <textarea id="cmtIn" maxlength="200" style="min-height:72px" placeholder="두 장은 확정입니다. 저는 한 장 받았어요."></textarea>`;
+  const ta=f.querySelector('#cmtIn');
+  ta.value=cmtDraft[p.id]||'';
+  ta.addEventListener('input',()=>{ cmtDraft[p.id]=ta.value; });
   const send=el('button','btn btn--primary','올리기'); send.type='button';
   send.style.marginTop='var(--s2)';
   send.addEventListener('click',async()=>{
     if(!await needFull()) return;
-    const body=$('#cmtIn').value.trim();
+    const body=ta.value.trim();
     if(!body){toast('내용을 써주셔야 올라가요.','bad');return;}
-    try{ await Api.createComment(p.id,body); toast('한마디 얹었어요','good'); await reload(); drawDetail(); }
+    try{ await Api.createComment(p.id,body); delete cmtDraft[p.id];
+         toast('한마디 얹었어요','good'); await reload(); drawDetail(); }
     catch(e){ toast(errMsg(e),'bad'); }
   });
   f.appendChild(send); box.appendChild(f);
@@ -2277,8 +2307,7 @@ async function boot(){
   :                     '지금은 이 기기에만 저장되는 모드예요. 쓰신 글은 다른 사람에게 안 보입니다.';
 
   if(mode==='supabase'){
-    const pull=async()=>{ try{ await Api.refresh(); renderAll();
-                                if($('#dlgDetail').open) drawDetail(); }catch(e){} };
+    const pull=async()=>{ try{ await Api.refresh(); paintSoon(); }catch(e){} };
     const me=await Api.restore();
     if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
     renderAll(); checkWarnings();
@@ -2288,8 +2317,7 @@ async function boot(){
     COLS.forEach(c=>Store.watch(c,rows=>{
       DB[c]=rows;
       if(c==='members'&&Me.key){ const r=rows.find(x=>x.nickKey===Me.key); if(r) Object.assign(Me.row||{},r); }
-      renderAll();
-      if($('#dlgDetail').open) drawDetail();
+      paintSoon();
     }));
     const me=await Api.restore();
     if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
