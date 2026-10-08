@@ -1013,7 +1013,7 @@ const LINKS=[
   {key:'instagram',platform:'인스타그램',          icon:'ig',   url:'https://www.instagram.com/geumsaemtang',
    desc:'휴무랑 이벤트 소식은 여기가 제일 빨라요'},
   {key:'blog',     platform:'블로그',              icon:'blog', url:'https://m.blog.naver.com/miontang',
-   desc:'사장님이 직접 쓰는 긴 이야기. 후기랑 공지는 여기 쌓여요'},
+   desc:'사장님이 직접 운영하시는 사우나 마니아 블로그예요. 사우나 꿀정보들을 볼 수 있어요'},
   {key:'youtube',  platform:'유튜브',              icon:'yt',   url:'https://youtube.com/@geumsaemtang',
    desc:'움직이는 금샘탕을 볼 수 있는 유일한 곳'},
   {key:'book',     platform:'집앞목욕탕 금샘탕편', icon:'book', url:'https://m.yes24.com/goods/detail/128861165',

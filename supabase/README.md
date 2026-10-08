@@ -109,6 +109,7 @@ update fc_members
 | 일반 회원이 경고 보내기·차단하기 | `NOT_ADMIN` |
 | 남이 받은 경고 훔쳐보기 | 자기 것만 보입니다 |
 | 차단된 사람이 글쓰기 | `BANNED` — 쓰던 글과 댓글도 전부 가려집니다 |
+| 경고 3회 | 자동으로 7일 차단됩니다 |
 | 범쨩이 자기를 차단 | `NOT_YOURSELF` |
 | 가짜 토큰으로 아무거나 | `NO_SESSION` |
 | 연달아 도배 | `COOLDOWN` (60초) |
@@ -196,7 +197,7 @@ create table if not exists fc_members (
   greeted_at  timestamptz,
   is_admin    boolean     not null default false,
   last_post_at timestamptz,
-  banned      boolean     not null default false
+  banned_until timestamptz -- 비어 있으면 정상. 미래 시각이면 그때까지 차단.
 );
 
 create table if not exists fc_posts (
@@ -299,8 +300,21 @@ drop function if exists fc_admin_login(text);
 drop function if exists fc_check_pin(fc_members,text);
 drop function if exists fc_profile(fc_members);
 drop function if exists fc_admin_reports(uuid);
+drop function if exists fc_admin_ban(uuid,bigint,boolean);
+drop function if exists fc_admin_members(uuid);
 -- 비밀번호 칼럼 두 개. 회원 4자리와 범쨩 8자리는 역할이 달라 따로 둔다.
-alter table fc_members add column if not exists pin_hash   text;
+alter table fc_members add column if not exists pin_hash     text;
+alter table fc_members add column if not exists banned_until timestamptz;
+-- 예전의 참/거짓 차단을 기간제로 옮긴다 (참이었다면 영구 차단으로)
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='fc_members' and column_name='banned') then
+    execute $q$ update fc_members set banned_until = 'infinity'
+                 where banned and banned_until is null $q$;
+    execute 'alter table fc_members drop column banned';
+  end if;
+end $$;
 alter table fc_members add column if not exists admin_hash text;
 -- 예전 버전에서 범쨩 비번이 pin_hash 에 있었다면 제자리로 옮긴다
 update fc_members set admin_hash = pin_hash, pin_hash = null
@@ -325,7 +339,7 @@ alter table fc_reports enable row level security;
 -- 적은 모양 그대로 바깥에 나간다. token 과 pin_hash 는 어디에도 없다.
 create view v_members as
   select m.id, m.nick, m.nick_key, m.joined_at, m.greeted_at, m.is_admin
-  from fc_members m where not m.banned;
+  from fc_members m where m.banned_until is null or m.banned_until <= now();
 
 create view v_posts as
   select p.id, m.nick, m.nick_key,
@@ -334,14 +348,14 @@ create view v_posts as
          (select count(*) from fc_likes    l where l.post_id = p.id)                   as like_count,
          (select count(*) from fc_comments c where c.post_id = p.id and not c.hidden)  as comment_count
   from fc_posts p join fc_members m on m.id = p.member_id
-  where not m.banned;
+  where m.banned_until is null or m.banned_until <= now();
 
 create view v_comments as
   select c.id, c.post_id, m.nick, m.nick_key,
          case when c.hidden then null else c.body end as body,
          c.created_at, c.hidden
   from fc_comments c join fc_members m on m.id = c.member_id
-  where not m.banned;
+  where m.banned_until is null or m.banned_until <= now();
 
 create view v_likes as
   select l.post_id, m.nick_key from fc_likes l join fc_members m on m.id = l.member_id;
@@ -349,12 +363,12 @@ create view v_likes as
 create view v_greetings as
   select g.member_id, m.nick, m.nick_key, g.answers, g.created_at, g.edited_at
   from fc_greetings g join fc_members m on m.id = g.member_id
-  where not g.hidden and not m.banned;
+  where not g.hidden and (m.banned_until is null or m.banned_until <= now());
 
 create view v_questions as
   select q.id, m.nick, m.nick_key, q.day, q.body, q.created_at, q.answer, q.answered_at
   from fc_questions q join fc_members m on m.id = q.member_id
-  where not q.hidden and not m.banned;
+  where not q.hidden and (m.banned_until is null or m.banned_until <= now());
 
 create view v_notice as select id, body, active, updated_at from fc_notices;
 create or replace view v_links  as select id, urls, updated_at from fc_links;
@@ -371,7 +385,7 @@ declare v fc_members;
 begin
   select * into v from fc_members where token = p_token;
   if v.id is null then raise exception 'NO_SESSION'; end if;
-  if v.banned then raise exception 'BANNED'; end if;
+  if v.banned_until is not null and v.banned_until > now() then raise exception 'BANNED'; end if;
   return v;
 end $$;
 
@@ -383,7 +397,9 @@ $$;
 create function fc_profile(v fc_members)
 returns json language sql stable as $$
   select json_build_object('token', v.token, 'nick', v.nick, 'nickKey', v.nick_key,
-    'joinedAt', v.joined_at, 'greetedAt', v.greeted_at, 'isAdmin', v.is_admin)
+    'joinedAt', v.joined_at, 'greetedAt', v.greeted_at, 'isAdmin', v.is_admin,
+    'warnings', (select count(*) from fc_warnings w where w.member_id = v.id),
+    'bannedUntil', case when v.banned_until > now() then v.banned_until end)
 $$;
 
 -- 이름표 달기 ------------------------------------------------------------
@@ -413,7 +429,6 @@ declare v fc_members;
 begin
   select * into v from fc_members where nick_key = fc_norm(p_nick);
   if v.id is null       then raise exception 'NO_MEMBER'; end if;
-  if v.banned           then raise exception 'BANNED'; end if;
   if v.pin_hash is null then raise exception 'NO_PIN'; end if;
   if v.pin_hash <> crypt(p_pin, v.pin_hash) then raise exception 'BAD_PIN'; end if;
   return fc_profile(v);
@@ -434,11 +449,17 @@ begin
 end $$;
 
 -- 이 기기에 남은 토큰으로 세션 복구 --------------------------------------
+-- 차단 중인 사람도 자기 상태(남은 기간, 경고 수)는 볼 수 있어야 하므로
+-- 여기서는 fc_auth 를 쓰지 않는다. 쓰기는 여전히 fc_auth 가 막는다.
 create or replace function fc_login_by_token(p_token uuid)
 returns json language plpgsql stable security definer
 set search_path = public, extensions as $$
 declare v fc_members;
-begin v := fc_auth(p_token); return fc_profile(v); end $$;
+begin
+  select * into v from fc_members where token = p_token;
+  if v.id is null then raise exception 'NO_SESSION'; end if;
+  return fc_profile(v);
+end $$;
 
 -- 범쨩 ------------------------------------------------------------------
 create or replace function fc_admin_claim(p_pin text)
@@ -649,9 +670,17 @@ end $$;
 -- 경고 보내기 / 받기 ----------------------------------------------------
 create or replace function fc_admin_warn(p_token uuid, p_member_id bigint, p_body text)
 returns void language plpgsql security definer set search_path = public, extensions as $$
+declare cnt int;
 begin perform fc_need_admin(p_token);
   insert into fc_warnings (member_id, body)
   values (p_member_id, nullif(btrim(coalesce(p_body,'')),''));
+  -- 세 번째 경고면 자동으로 일주일 차단한다
+  select count(*) into cnt from fc_warnings where member_id = p_member_id;
+  if cnt >= 3 then
+    update fc_members set banned_until = greatest(coalesce(banned_until, now()), now() + interval '7 days')
+     where id = p_member_id and not is_admin
+       and (banned_until is null or banned_until <= now());
+  end if;
 end $$;
 
 -- 내가 받은, 아직 안 읽은 경고
@@ -676,13 +705,18 @@ begin
 end $$;
 
 -- 차단 / 차단 풀기 -------------------------------------------------------
-create or replace function fc_admin_ban(p_token uuid, p_member_id bigint, p_banned boolean)
+-- p_days : 0 이면 차단 해제, 양수면 그만큼, 음수면 영구
+create or replace function fc_admin_ban(p_token uuid, p_member_id bigint, p_days int)
 returns void language plpgsql security definer set search_path = public, extensions as $$
 declare a fc_members;
 begin
   a := fc_need_admin(p_token);
   if p_member_id = a.id then raise exception 'NOT_YOURSELF'; end if;
-  update fc_members set banned = p_banned where id = p_member_id and not is_admin;
+  update fc_members
+     set banned_until = case when p_days = 0 then null
+                             when p_days < 0 then 'infinity'::timestamptz
+                             else now() + (p_days || ' days')::interval end
+   where id = p_member_id and not is_admin;
 end $$;
 
 -- 범쨩이 보는 회원 목록 (차단된 사람까지)
@@ -693,10 +727,10 @@ begin perform fc_need_admin(p_token);
   return query
     select json_build_object('id', m.id, 'nick', m.nick, 'nickKey', m.nick_key,
       'joinedAt', m.joined_at, 'greetedAt', m.greeted_at, 'isAdmin', m.is_admin,
-      'banned', m.banned,
+      'bannedUntil', case when m.banned_until > now() then m.banned_until end,
       'posts', (select count(*) from fc_posts p where p.member_id = m.id),
       'warnings', (select count(*) from fc_warnings w where w.member_id = m.id))
-    from fc_members m order by m.banned desc, m.joined_at;
+    from fc_members m order by (m.banned_until > now()) desc nulls last, m.joined_at;
 end $$;
 
 create or replace function fc_admin_reports(p_token uuid)
@@ -704,7 +738,7 @@ returns setof json language plpgsql security definer set search_path = public, e
 begin perform fc_need_admin(p_token);
   return query select json_build_object('id', r.id, 'targetType', r.target_type,
     'targetId', r.target_id, 'reason', r.reason, 'createdAt', r.created_at, 'nick', m.nick,
-    'authorId', a.id, 'authorNick', a.nick, 'authorBanned', a.banned,
+    'authorId', a.id, 'authorNick', a.nick, 'authorBannedUntil', case when a.banned_until > now() then a.banned_until end,
     'authorWarnings', (select count(*) from fc_warnings w where w.member_id = a.id))
   from fc_reports r
   join fc_members m on m.id = r.member_id
@@ -763,7 +797,7 @@ grant execute on function fc_admin_reports(uuid) to anon, authenticated;
 grant execute on function fc_admin_warn(uuid,bigint,text) to anon, authenticated;
 grant execute on function fc_my_warnings(uuid) to anon, authenticated;
 grant execute on function fc_ack_warning(uuid,bigint) to anon, authenticated;
-grant execute on function fc_admin_ban(uuid,bigint,boolean) to anon, authenticated;
+grant execute on function fc_admin_ban(uuid,bigint,int) to anon, authenticated;
 grant execute on function fc_admin_members(uuid) to anon, authenticated;
 grant execute on function fc_admin_clear_report(uuid,bigint) to anon, authenticated;
 

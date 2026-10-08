@@ -357,6 +357,14 @@ dialog::backdrop{
 [data-skin="pixel"] .chip{border-radius:0;}
 .chip[aria-checked="true"]{background:var(--red);color:#fff;font-weight:700;}
 
+/* 경고·차단 알림 (본인만 보는 칸) */
+.state-box{display:flex;flex-direction:column;gap:3px;margin-bottom:var(--s3);
+  padding:var(--s3);border:var(--bd);clip-path:var(--clip);}
+.state-box strong{font:500 var(--t-ui)/1.3 var(--font-body);}
+.state-box span{font:400 var(--t-meta)/1.4 var(--font-body);}
+.state-box--warn{background:var(--yolk);color:#141414;}
+.state-box--ban{background:var(--red);color:#fff;}
+
 /* 전체 보기 한 줄 */
 .all-row{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
   margin-bottom:var(--s2);padding:var(--s3);cursor:pointer;
@@ -485,6 +493,7 @@ dialog::backdrop{
               <span class="panel-mark" aria-hidden="true"></span>
             </summary>
             <div class="panel-body">
+              <div id="myState"></div>
               <dl class="stat-grid" id="myStatList"></dl>
               <p class="t-meta" id="myStatNote"></p>
             </div>
@@ -789,6 +798,13 @@ const daysSince=jd=>Math.floor((dayNum(kstDay())-dayNum(jd))/86400000)+1;
 const tillMidnight=()=>86400000-((Date.now()+KST)%86400000);
 const hhmmss=ms=>{const s=Math.max(0,Math.floor(ms/1000));
   return [s/3600|0,(s/60|0)%60,s%60].map(v=>String(v).padStart(2,'0')).join(':');};
+/** 차단 기한을 사람 말로. 영구 차단은 아주 먼 시각으로 들어온다. */
+const banLeft=ms=>{
+  if(!ms) return null;
+  if(ms-Date.now()>3650*86400000) return '영구';
+  const d=Math.ceil((ms-Date.now())/86400000);
+  return d>1 ? d+'일 남음' : '오늘까지';
+};
 const ago=ms=>{const d=Date.now()-ms;
   if(d<60000)return '방금'; if(d<3600000)return (d/60000|0)+'분 전';
   if(d<86400000)return (d/3600000|0)+'시간 전'; if(d<7*86400000)return (d/86400000|0)+'일 전';
@@ -917,7 +933,10 @@ const Me={
   get key(){ return this.nick?nickKey(this.nick):null; },
   get id(){ return this.nick?nickId(this.nick):null; },
   get days(){ return this.row?daysSince(this.row.joinedDay):0; },
-  can(a){ const s=this.state;
+  get banned(){ return !!(this.row&&this.row.bannedUntil&&this.row.bannedUntil>Date.now()); },
+  get warnings(){ return (this.row&&this.row.warnings)||0; },
+  can(a){ if(this.banned&&a!=='none') return false;
+    const s=this.state;
     if(a==='like') return s!=='guest';
     if(a==='post'||a==='comment'||a==='question'||a==='report') return s==='full'||s==='admin';
     if(a==='moderate') return s==='admin';
@@ -959,7 +978,8 @@ const ERR={
   COOLDOWN:'조금만 쉬었다 가요. 1분 뒤에 다시 쓰실 수 있어요.',
   DAILY_LIMIT:'오늘 질문은 이미 한 장 쓰셨어요. 자정이 지나면 새로 한 장 드려요.',
   NO_SESSION:'이름표가 풀렸어요. 다시 달아주세요.',
-  BANNED:'지금은 냉탕에 계십니다.',
+  BANNED:'지금은 냉탕에 계십니다. 차단이 풀리면 다시 쓰실 수 있어요.',
+  NOT_YOURSELF:'범쨩은 자기 자신을 차단할 수 없어요.',
   GREET_SHORT:'앞의 두 개만 채워주시면 돼요. 정말 두 줄이면 끝납니다.',
   NOT_FOUND:'이미 사라진 글이에요.',
 };
@@ -1002,7 +1022,9 @@ const ApiSupabase={
     try{ localStorage.setItem('udfc.token',p.token); }catch(e){}
     Me.nick=p.nick;
     Me.row={id:p.nickKey,nick:p.nick,nickKey:p.nickKey,joinedDay:kstDay(Date.parse(p.joinedAt)),
-            greetedAt:p.greetedAt?Date.parse(p.greetedAt):null,isAdmin:!!p.isAdmin};
+            greetedAt:p.greetedAt?Date.parse(p.greetedAt):null,isAdmin:!!p.isAdmin,
+            warnings:+p.warnings||0,
+            bannedUntil:p.bannedUntil?Date.parse(p.bannedUntil):null};
     return Me.row;
   },
   async refresh(){
@@ -1053,7 +1075,7 @@ const ApiSupabase={
   setLinks(u){ return SB.rpc('fc_admin_links',{p_token:this.token,p_urls:u}); },
   listReports(){ return SB.rpc('fc_admin_reports',{p_token:this.token}); },
   warn(mid,body){ return SB.rpc('fc_admin_warn',{p_token:this.token,p_member_id:mid,p_body:body}); },
-  ban(mid,on){ return SB.rpc('fc_admin_ban',{p_token:this.token,p_member_id:mid,p_banned:on}); },
+  ban(mid,days){ return SB.rpc('fc_admin_ban',{p_token:this.token,p_member_id:mid,p_days:days}); },
   listMembers(){ return SB.rpc('fc_admin_members',{p_token:this.token}); },
   myWarnings(){ return SB.rpc('fc_my_warnings',{p_token:this.token}); },
   ackWarning(id){ return SB.rpc('fc_ack_warning',{p_token:this.token,p_id:id}); },
@@ -1067,15 +1089,17 @@ const ApiSupabase={
 const ApiDoc={
   mode:'local', token:null,
   async init(){ this.mode=await Store.init(); return this.mode; },
-  _row(id,row){ Me.nick=row.nick; Me.row=Object.assign({_id:id},row); return Me.row; },
+  _row(id,row){ Me.nick=row.nick;
+    Me.row=Object.assign({_id:id},row,{
+      warnings:DB.warnings.filter(w=>w.memberId===id).length,
+      bannedUntil:(row.bannedUntil&&row.bannedUntil>Date.now())?row.bannedUntil:null});
+    return Me.row; },
   async refresh(){ /* watch 가 알아서 채운다 */ },
   async restore(){
     let saved=null; try{ saved=localStorage.getItem(LS.nick); }catch(e){}
     if(!saved) return null;
     const id='m_'+nickId(saved), row=await Store.get('members',id);
     if(!row){ try{localStorage.removeItem(LS.nick);}catch(e){} return null; }
-    if(row.banned){ try{localStorage.removeItem(LS.nick);}catch(e){}
-      toast('지금은 냉탕에 계십니다.','bad'); return null; }
     return this._row(id,row);
   },
   async join(nick,pin){
@@ -1199,22 +1223,31 @@ const ApiDoc={
       const a = t && DB.members.find(m=>m.nickKey===t.nickKey);
       return {id:r._id,targetType:r.targetType,targetId:r.targetId,reason:r.reason,
               createdAt:r.createdAt,nick:r.nick||r.nickKey,
-              authorId:a&&a._id,authorNick:a&&a.nick,authorBanned:!!(a&&a.banned),
+              authorId:a&&a._id,authorNick:a&&a.nick,
+              authorBannedUntil:(a&&a.bannedUntil&&a.bannedUntil>Date.now())?a.bannedUntil:null,
               authorWarnings:DB.warnings.filter(w=>a&&w.memberId===a._id).length};
     });
   },
   async warn(mid,body){
     await Store.set('warnings','w_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       {memberId:mid,body:body||null,createdAt:Date.now(),readAt:null});
+    const cnt=DB.warnings.filter(w=>w.memberId===mid).length+1;
+    const m=DB.members.find(x=>x._id===mid);
+    if(cnt>=3 && m && !m.isAdmin && !(m.bannedUntil&&m.bannedUntil>Date.now()))
+      await Store.patch('members',mid,{bannedUntil:Date.now()+7*86400000});
   },
-  async ban(mid,on){
-    const me=DB.members.find(m=>m._id===mid);
-    if(me&&me.isAdmin) throw new Error('NOT_YOURSELF');
-    await Store.patch('members',mid,{banned:!!on});
+  async ban(mid,days){
+    const m=DB.members.find(x=>x._id===mid);
+    if(m&&m.isAdmin) throw new Error('NOT_YOURSELF');
+    const until = days===0 ? null
+                : days<0   ? 8.64e15
+                : Date.now()+days*86400000;
+    await Store.patch('members',mid,{bannedUntil:until});
   },
   async listMembers(){
     return DB.members.map(m=>({id:m._id,nick:m.nick,nickKey:m.nickKey,joinedAt:m.joinedAt,
-      greetedAt:m.greetedAt,isAdmin:!!m.isAdmin,banned:!!m.banned,
+      greetedAt:m.greetedAt,isAdmin:!!m.isAdmin,
+      bannedUntil:(m.bannedUntil&&m.bannedUntil>Date.now())?m.bannedUntil:null,
       posts:DB.posts.filter(p=>p.nickKey===m.nickKey).length,
       warnings:DB.warnings.filter(w=>w.memberId===m._id).length}));
   },
@@ -1316,7 +1349,7 @@ const LINKS=[
   {key:'instagram',platform:'인스타그램',icon:'ig',url:'https://www.instagram.com/geumsaemtang',
    desc:'휴무랑 이벤트 소식은 여기가 제일 빨라요'},
   {key:'blog',platform:'블로그',icon:'blog',url:'https://m.blog.naver.com/miontang',
-   desc:'사장님이 직접 쓰는 긴 이야기. 후기랑 공지는 여기 쌓여요'},
+   desc:'사장님이 직접 운영하시는 사우나 마니아 블로그예요. 사우나 꿀정보들을 볼 수 있어요'},
   {key:'youtube',platform:'유튜브',icon:'yt',url:'https://youtube.com/@geumsaemtang',
    desc:'움직이는 금샘탕을 볼 수 있는 유일한 곳'},
   {key:'book',platform:'집앞목욕탕 금샘탕편',icon:'book',url:'https://m.yes24.com/goods/detail/128861165',
@@ -1570,6 +1603,21 @@ function renderMyStats(){
   const rows=[['쓴 주접',mine.length,'개'],['받은 사우나돌',got,'개'],
               ['올린 사우나돌',gave,'개'],['단 댓글',cmts,'개'],
               ['넣은 질문',qs,'개'],['받은 답변',answered,'개']];
+
+  /* 경고와 차단은 본인만 보는 정보라 패널 안에 둔다 */
+  const st=$('#myState'); st.innerHTML='';
+  const warn=Me.warnings;
+  if(Me.banned){
+    const b=el('div','state-box state-box--ban');
+    b.innerHTML=`<strong>지금은 냉탕에 계십니다</strong>
+      <span>글과 댓글을 쓸 수 없어요. ${esc(banLeft(Me.row.bannedUntil))}.</span>`;
+    st.appendChild(b);
+  }else if(warn){
+    const b=el('div','state-box state-box--warn');
+    b.innerHTML=`<strong>경고 ${warn} / 3</strong>
+      <span>${warn>=2?'한 번만 더 받으면 일주일 차단이에요.':'활동 규칙을 한 번 더 봐주세요.'}</span>`;
+    st.appendChild(b);
+  }
   const dl=$('#myStatList'); dl.innerHTML='';
   rows.forEach(([k,v,unit])=>{
     const c=el('div','stat-cell');
@@ -1613,8 +1661,15 @@ async function needNick(){
   if(Me.row) return true;
   toast(GATE.guest); return await openNick();
 }
+/** 차단 중이면 다른 안내보다 이게 먼저다. */
+function banBlocked(){
+  if(!Me.banned) return false;
+  toast(ERR.BANNED+' ('+banLeft(Me.row.bannedUntil)+')','bad');
+  return true;
+}
 async function needFull(gateMsg){
   if(!await needNick()) return false;
+  if(banBlocked()) return false;
   if(Me.can('post')) return true;
   toast(gateMsg||GATE.member);
   return await openGreet();
@@ -1701,6 +1756,7 @@ function buildGreetFields(prev){
 function openGreet(){
   return new Promise(async res=>{
     if(!Me.row){ const ok=await needNick(); if(!ok) return res(false); }
+    if(banBlocked()) return res(false);
     const mine=DB.greetings.find(g=>g.nickKey===Me.key);
     buildGreetFields(mine&&mine.answers);
     const d=$('#dlgGreet');
@@ -1773,6 +1829,7 @@ async function hidePost(p){
 /* --- 공감 ------------------------------------------------------- */
 async function toggleLike(p,btn){
   if(!await needNick()) return;
+  if(banBlocked()) return;
   const on=btn.getAttribute('aria-pressed')==='true', n=btn.querySelector('.n');
   btn.setAttribute('aria-pressed',on?'false':'true');
   n.textContent=String(Math.max(0,(+n.textContent||0)+(on?-1:1)));
@@ -1950,8 +2007,10 @@ async function openReports(){
       const who=el('div','rep-head'); who.style.marginTop='var(--s3)';
       who.innerHTML=`<span class="t-meta">글쓴 사람</span>
         <span class="nick">${esc(r.authorNick)}</span>`
-        +(r.authorWarnings?`<span class="badge">경고 ${r.authorWarnings}회</span>`:'')
-        +(r.authorBanned?'<span class="badge badge--admin">차단됨</span>':'');
+        +(r.authorWarnings?`<span class="badge">경고 ${r.authorWarnings}/3</span>`:'')
+        +(r.authorBannedUntil
+            ?`<span class="badge badge--admin">차단 ${esc(banLeft(Date.parse(r.authorBannedUntil)||r.authorBannedUntil))}</span>`
+            :'');
       c.appendChild(who);
     }
 
@@ -1966,14 +2025,14 @@ async function openReports(){
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(warn);
 
-      const ban=el('button','btn btn--sm btn--danger',r.authorBanned?'차단 풀기':'계정 차단');
+      const banned=!!r.authorBannedUntil;
+      const ban=el('button','btn btn--sm btn--danger',banned?'차단 풀기':'계정 차단');
       ban.type='button';
       ban.addEventListener('click',async()=>{
-        const on=!r.authorBanned;
-        if(on&&!await confirmBox('계정 차단',
-          esc(r.authorNick)+'님의 글과 댓글이 전부 가려지고, 더는 아무것도 못 쓰게 됩니다.',
-          '차단할래요','취소')) return;
-        try{ await Api.ban(r.authorId,on); toast(on?'차단했습니다':'차단을 풀었습니다','good');
+        let days=0;
+        if(!banned){ days=await askBanDays(r.authorNick); if(days===null) return; }
+        try{ await Api.ban(r.authorId,days);
+             toast(days?'차단했습니다':'차단을 풀었습니다','good');
              await reload(); openReports(); }
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(ban);
@@ -1996,6 +2055,28 @@ async function openReports(){
   });
 }
 
+/** 며칠 차단할지 고른다. 0 은 해제, -1 은 영구. */
+function askBanDays(nick){
+  return new Promise(res=>{
+    const d=$('#dlgConfirm');
+    $('#cfTitle').textContent='계정 차단';
+    $('#cfMsg').innerHTML=esc(nick)+`님의 글과 댓글이 전부 가려지고, 그동안 아무것도 못 쓰게 됩니다.
+      <span class="chips" id="banDays" style="margin-top:var(--s3)"></span>`;
+    const box=$('#cfMsg').querySelector('#banDays');
+    let pick=7;
+    [[3,'3일'],[7,'7일'],[30,'30일'],[-1,'영구']].forEach(([v,label])=>{
+      const b=el('button','chip',label); b.type='button';
+      b.setAttribute('aria-checked',String(v===pick));
+      b.addEventListener('click',()=>{ pick=v;
+        [...box.children].forEach(x=>x.setAttribute('aria-checked',String(x.textContent===label))); });
+      box.appendChild(b);
+    });
+    $('#cfYes').textContent='차단할래요'; $('#cfNo').textContent='취소';
+    d.onclose=()=>res(d.returnValue==='ok'?pick:null);
+    d.showModal();
+  });
+}
+
 /* --- 범쨩 : 회원 관리 ---------------------------------------------- */
 async function openMembers(){
   const box=$('#memberBody'); box.innerHTML='';
@@ -2007,8 +2088,8 @@ async function openMembers(){
     c.innerHTML=`<div class="rep-head">
         <span class="nick">${esc(m.nick)}</span>
         ${m.isAdmin?'<span class="badge badge--admin">범쨩</span>':''}
-        ${m.banned?'<span class="badge badge--admin">차단됨</span>':''}
-        ${m.warnings?`<span class="badge">경고 ${m.warnings}회</span>`:''}
+        ${m.bannedUntil?`<span class="badge badge--admin">차단 ${esc(banLeft(Date.parse(m.bannedUntil)||m.bannedUntil))}</span>`:''}
+        ${m.warnings?`<span class="badge">경고 ${m.warnings}/3</span>`:''}
       </div>
       <p class="t-meta">${daysSince(kstDay(Date.parse(m.joinedAt)||m.joinedAt))}일째 ·
         주접 ${m.posts}개 · ${m.greetedAt?'인사 완료':'인사 전'}</p>`;
@@ -2021,12 +2102,12 @@ async function openMembers(){
         try{ await Api.warn(m.id,t); toast('경고를 보냈습니다','good'); await reload(); openMembers(); }
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(warn);
-      const ban=el('button','btn btn--sm btn--danger',m.banned?'차단 풀기':'계정 차단'); ban.type='button';
+      const ban=el('button','btn btn--sm btn--danger',m.bannedUntil?'차단 풀기':'계정 차단');
+      ban.type='button';
       ban.addEventListener('click',async()=>{
-        const on=!m.banned;
-        if(on&&!await confirmBox('계정 차단',
-          m.nick+'님의 글과 댓글이 전부 가려지고, 더는 아무것도 못 쓰게 됩니다.','차단할래요','취소')) return;
-        try{ await Api.ban(m.id,on); toast(on?'차단했습니다':'차단을 풀었습니다','good');
+        let days=0;
+        if(!m.bannedUntil){ days=await askBanDays(m.nick); if(days===null) return; }
+        try{ await Api.ban(m.id,days); toast(days?'차단했습니다':'차단을 풀었습니다','good');
              await reload(); openMembers(); }
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(ban);
