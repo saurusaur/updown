@@ -236,6 +236,7 @@ input:focus,textarea:focus{background:var(--bg-soft);outline:3px solid var(--blu
 
 /* --- 10. 섹션 헤더 ----------------------------------------------- */
 .sec-head{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s1);}
+.sec-head .btn{flex:none;}
 .sec-head h2{font:400 var(--t-h2)/1.3 var(--font-head);}
 .sec-head .line{flex:1;height:0;border-top:2px dashed var(--line);opacity:.45;}
 .sec-sub{font:400 var(--t-meta)/1.5 var(--font-body);color:var(--ink-soft);margin-bottom:var(--s2);line-height:1.45;}
@@ -346,6 +347,29 @@ dialog::backdrop{
 .toast{border-radius:0;}
 .toast--bad{background:var(--red);color:#fff;}
 .toast--good{background:var(--yolk);color:#141414;}
+
+/* 신고 사유 칩 */
+.field-label{font:500 var(--t-ui)/1.4 var(--font-body);}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2);}
+.chip{min-height:36px;padding:0 var(--s3);cursor:pointer;
+  background:var(--card-2);color:var(--ink);border:var(--bd);border-radius:var(--r-pill);
+  clip-path:var(--clip);font:500 var(--t-ui)/1 var(--font-body);}
+[data-skin="pixel"] .chip{border-radius:0;}
+.chip[aria-checked="true"]{background:var(--red);color:#fff;font-weight:700;}
+
+/* 전체 보기 한 줄 */
+.all-row{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;
+  margin-bottom:var(--s2);padding:var(--s3);cursor:pointer;
+  background:var(--card-2);color:var(--ink);border:var(--bd);clip-path:var(--clip);}
+.all-row:hover{background:var(--bg-soft);}
+.all-top{display:flex;align-items:baseline;gap:var(--s2);}
+.all-body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;line-height:1.5;}
+
+/* 신고함 한 건 */
+.rep-head{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-bottom:var(--s2);}
+.rep-quote{border-left:4px solid var(--grey-line);padding-left:var(--s3);
+  white-space:pre-wrap;margin-top:var(--s2);}
 
 /* --- 17. 글/댓글 ------------------------------------------------- */
 .post .who{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2);flex-wrap:wrap;}
@@ -474,7 +498,8 @@ dialog::backdrop{
         </section>
 
         <section id="recent">
-          <div class="sec-head"><h2>최근 주접</h2><span class="line"></span></div>
+          <div class="sec-head"><h2>최근 주접</h2><span class="line"></span>
+            <button class="btn btn--sm btn--ghost" type="button" data-all="posts">전체 보기</button></div>
           <p class="sec-sub">방금 올라온 것들부터</p>
           <div class="stack" id="recentList"></div>
           <div class="row" id="moreRow" style="justify-content:center;margin-top:var(--s3);" hidden>
@@ -483,7 +508,8 @@ dialog::backdrop{
         </section>
 
         <section id="hello">
-          <div class="sec-head"><h2>인사해요</h2><span class="line"></span></div>
+          <div class="sec-head"><h2>인사해요</h2><span class="line"></span>
+            <button class="btn btn--sm btn--ghost" type="button" data-all="greetings">전체 보기</button></div>
           <p class="sec-sub">여기 한 줄 남기셔야 주접 쓰실 수 있어요. 순서가 좀 깐깐하죠? 그래도 이게 제일 빠릅니다.</p>
           <div class="greet-scroll" id="greetList"></div>
           <div class="row" style="margin-top:var(--s3);">
@@ -684,6 +710,34 @@ dialog::backdrop{
   <div class="actions">
     <button class="btn" value="cancel" type="submit">취소</button>
     <button class="btn btn--primary" value="ok" type="submit">저장</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgAll"><div class="sheet">
+  <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
+  <h2 id="allTitle"></h2>
+  <p class="t-meta" id="allSub"></p>
+  <div id="allBody" style="margin-top:var(--s4)"></div>
+</div></dialog>
+
+<dialog id="dlgReport"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2>신고하기</h2>
+  <p class="t-meta">범쨩만 봅니다. 글쓴 분에게는 안 보여요.</p>
+  <div class="body">
+    <div class="field">
+      <span class="field-label">어떤 점이 문제인가요?</span>
+      <div class="chips" id="repCats" role="radiogroup" aria-label="신고 사유"></div>
+    </div>
+    <div class="field">
+      <label for="repMemo">메모 <span class="t-meta">(선택)</span></label>
+      <textarea id="repMemo" maxlength="150" style="min-height:70px"
+        placeholder="어디가 문제인지 한 줄만 적어주시면 범쨩이 보기 좋아요."></textarea>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">취소</button>
+    <button class="btn btn--danger" value="ok" type="submit">신고 보내기</button>
   </div>
 </form></dialog>
 
@@ -1733,6 +1787,11 @@ function drawDetail(){
         catch(e){ toast(errMsg(e),'bad'); }
       });
       w.appendChild(d);
+    }else if(Me.can('report')&&!c.hidden){
+      const r=el('button','btn btn--sm btn--ghost','신고'); r.type='button';
+      r.style.marginTop='var(--s2)';
+      r.addEventListener('click',()=>{ $('#dlgDetail').close(); report('comment',c._id); });
+      w.appendChild(r);
     }
     box.appendChild(w);
   });
@@ -1785,34 +1844,110 @@ async function answerQ(q){
 }
 
 /* --- 신고 ------------------------------------------------------- */
+const REPORT_CATS=['욕설','개인정보','홍보','도배','기타'];
+/** 사유를 고르고 메모를 남긴다. 둘을 ' · ' 로 묶어 한 칸에 저장한다. */
 async function report(type,id){
   if(!await needFull()) return;
-  const why=await textBox('신고하기','어떤 점이 문제인지 짧게 적어주세요. 욕설 / 개인정보 / 홍보 / 도배 / 기타');
-  if(why===null) return;
-  try{ await Api.report(type,id,why||'기타'); toast('신고 접수됐어요. 범쨩이 확인할게요.','good'); await reload(); }
-  catch(e){ toast(errMsg(e),'bad'); }
+  const d=$('#dlgReport'), box=$('#repCats'), memo=$('#repMemo');
+  let pick=REPORT_CATS[0];
+  box.innerHTML=''; memo.value='';
+  REPORT_CATS.forEach(c=>{
+    const b=el('button','chip',c); b.type='button'; b.setAttribute('role','radio');
+    b.setAttribute('aria-checked', String(c===pick));
+    b.addEventListener('click',()=>{ pick=c;
+      [...box.children].forEach(x=>x.setAttribute('aria-checked',String(x.textContent===c))); });
+    box.appendChild(b);
+  });
+  d.onclose=async()=>{
+    if(d.returnValue!=='ok') return;
+    const m=memo.value.trim();
+    try{ await Api.report(type,id, m?pick+' · '+m:pick);
+         toast('신고 접수됐어요. 범쨩이 확인할게요.','good'); await reload(); }
+    catch(e){ toast(errMsg(e),'bad'); }
+  };
+  d.showModal();
 }
 async function openReports(){
   const box=$('#reportBody'); box.innerHTML='';
   let rows=[]; try{ rows=await Api.listReports()||[]; }catch(e){ toast(errMsg(e),'bad'); }
-  if(!rows.length){ box.appendChild(emptyBox('신고 없음. 평화로운 탕이네요.','','','sleep')); }
-  else rows.forEach(r=>{
-    const p=DB.posts.find(x=>String(x.id)===String(r.targetId));
+  $('#dlgReports').showModal();
+  if(!rows.length){ box.appendChild(emptyBox('신고 없음. 평화로운 탕이네요.','','','sleep')); return; }
+
+  rows.forEach(r=>{
+    const isPost = r.targetType==='post';
+    const target = isPost ? DB.posts.find(x=>String(x.id)===String(r.targetId))
+                          : DB.comments.find(x=>String(x._id)===String(r.targetId));
+    const sep=String(r.reason||'').indexOf(' · ');
+    const cat=sep<0?String(r.reason||'기타'):r.reason.slice(0,sep);
+    const memo=sep<0?'':r.reason.slice(sep+3);
+    const when=Date.parse(r.createdAt)||r.createdAt;
+
     const w=el('div','card-wrap'), c=el('div','card');
-    c.innerHTML=`<p class="t-meta">${esc(r.targetType)} · ${esc(ago(Date.parse(r.createdAt)||r.createdAt))} · 신고자 ${esc(r.nick)}</p>
-      <p style="margin-top:var(--s2)"><strong>사유</strong> ${esc(r.reason)}</p>
-      <div class="body" style="margin-top:var(--s2)">${p?esc(p.body.slice(0,120)):'(대상이 이미 없어요)'}</div>`;
-    const done=el('button','btn btn--sm','처리 완료'); done.type='button'; done.style.marginTop='var(--s3)';
+    c.innerHTML=`<div class="rep-head">
+        <span class="badge badge--admin">${esc(cat)}</span>
+        <span class="badge">${isPost?'주접':'댓글'}</span>
+        <span class="t-meta">${esc(ago(when))} · 신고한 사람 ${esc(r.nick)}</span>
+      </div>`
+      +(memo?`<p>${esc(memo)}</p>`:'<p class="t-meta">메모 없음</p>')
+      +`<div class="rep-quote">${target
+          ? `<span class="t-meta">${esc(target.nick)}</span><br>${esc(target.body||'(숨겨진 글이에요)')}`
+          : '<span class="t-meta">대상이 이미 사라졌어요.</span>'}</div>`;
+
+    const foot=el('div','foot'); foot.style.marginTop='var(--s3)';
+    if(target&&isPost){
+      const go=el('button','btn btn--sm','글 보기'); go.type='button';
+      go.addEventListener('click',()=>{ $('#dlgReports').close(); openDetail(target.id); });
+      foot.appendChild(go);
+      const h=el('button','btn btn--sm btn--danger',target.hidden?'다시 보이기':'글 숨기기');
+      h.type='button';
+      h.addEventListener('click',async()=>{ await hidePost(target); openReports(); });
+      foot.appendChild(h);
+    }
+    const done=el('button','btn btn--sm btn--ghost','처리 완료'); done.type='button';
     done.addEventListener('click',async()=>{
       try{ await Api.clearReport(r.id); toast('신고함에서 치웠어요'); openReports(); }
       catch(e){ toast(errMsg(e),'bad'); }});
-    c.appendChild(done);
-    if(p){ const h=el('button','btn btn--sm btn--danger','글 숨기기');h.type='button';
-      h.style.cssText='margin-top:var(--s3);margin-left:var(--s2)';
-      h.addEventListener('click',()=>hidePost(p)); c.appendChild(h); }
-    w.appendChild(c); box.appendChild(w);
+    foot.appendChild(done);
+    c.appendChild(foot); w.appendChild(c); box.appendChild(w);
   });
-  $('#dlgReports').showModal();
+}
+
+/* --- 전체 보기 ------------------------------------------------------- */
+function openAll(kind){
+  const box=$('#allBody'); box.innerHTML='';
+  if(kind==='posts'){
+    const list=DB.posts.filter(p=>!p.hidden||Me.can('moderate')||p.nickKey===Me.key)
+      .sort((a,b)=>b.createdAt-a.createdAt);
+    $('#allTitle').textContent='주접 전체';
+    $('#allSub').textContent=list.length?`지금까지 ${list.length}개가 쌓였어요. 눌러서 열어보세요.`
+                                        :'아직 아무도 주접을 안 떨었어요.';
+    list.forEach(p=>{
+      const row=el('button','all-row'); row.type='button';
+      row.innerHTML=`<span class="all-top"><span class="nick">${esc(p.nick)}</span>
+          <span class="t-meta">${esc(ago(p.createdAt))}</span></span>
+        <span class="all-body">${esc(p.body||'온도 조절 중인 글이에요.')}</span>
+        <span class="t-meta">사우나돌 ${p.likeCount||0} · 댓글 ${p.commentCount||0}</span>`;
+      row.addEventListener('click',()=>{ $('#dlgAll').close(); openDetail(p.id); });
+      box.appendChild(row);
+    });
+  }else{
+    const list=DB.greetings.filter(g=>!g.hidden).sort((a,b)=>b.createdAt-a.createdAt);
+    $('#allTitle').textContent='인사 전체';
+    $('#allSub').textContent=list.length?`${list.length}분이 인사를 남기셨어요.`
+                                        :'아직 인사가 하나도 없어요.';
+    list.forEach(g=>{
+      const m=DB.members.find(x=>x.nickKey===g.nickKey);
+      const c=el('div','card greet'); c.style.marginBottom='var(--s3)';
+      c.innerHTML=`<div class="who"><span class="nick">${esc(g.nick)}</span>`
+        +(m?`<span class="badge">${daysSince(m.joinedDay)}일째</span>`:'')
+        +`<span class="t-meta">${esc(ago(g.createdAt))}</span></div><dl style="margin:0">`
+        +GREET_Q.filter(q=>g.answers&&g.answers[q.k]).map(q=>
+          `<dt>${esc(q.label)}</dt><dd>${esc(g.answers[q.k])}</dd>`).join('')+`</dl>`;
+      box.appendChild(c);
+    });
+  }
+  if(!box.children.length) box.appendChild(emptyBox('아직 아무것도 없어요.','','','sleep'));
+  $('#dlgAll').showModal();
 }
 
 /* --- 범쨩 : 공지 / 링크 ------------------------------------------ */
@@ -1912,6 +2047,7 @@ async function boot(){
   d.addEventListener('toggle',()=>{ try{
     localStorage.setItem('udfc.statsShut', d.open?'0':'1'); }catch(e){} });
 })();
+$$('[data-all]').forEach(b=>b.addEventListener('click',()=>openAll(b.dataset.all)));
 $('#rulesBtn').addEventListener('click',()=>$('#dlgRules').showModal());
 $('#jumpHello').addEventListener('click',()=>$('#hello').scrollIntoView({behavior:'smooth',block:'start'}));
 $('#meBtn').addEventListener('click',async()=>{
