@@ -528,7 +528,7 @@ dialog::backdrop{
         <section id="hello">
           <div class="sec-head"><h2>인사해요</h2><span class="line"></span>
             <button class="btn btn--sm btn--ghost" type="button" data-all="greetings">전체 보기</button></div>
-          <p class="sec-sub">여기 한 줄 남기셔야 주접 쓰실 수 있어요. 먼저 오신 분들 인사에 사우나돌이랑 환영 한마디도 얹어주세요.</p>
+          <p class="sec-sub">여기 한 줄 남기셔야 주접 쓰실 수 있어요. 먼저 오신 분들 인사에는 사우나돌 하나씩 얹어주시고요.</p>
           <div class="greet-scroll" id="greetList"></div>
           <div class="row" style="margin-top:var(--s3);">
             <button class="btn btn--primary" type="button" id="greetBtn">인사 남기기</button>
@@ -947,7 +947,7 @@ const Store={
 
 /* --- 상태 ------------------------------------------------------- */
 const DB={members:[],posts:[],comments:[],likes:[],greetings:[],questions:[],notices:[],reports:[],links:[],warnings:[],
-  greetingLikes:[],greetingComments:[]};
+  greetingLikes:[]};
 const Me={
   nick:null, row:null,
   get state(){ if(!this.row)return 'guest';
@@ -1051,10 +1051,10 @@ const ApiSupabase={
     return Me.row;
   },
   async refresh(){
-    const [posts,comments,likes,greets,qs,notice,links,members,gLikes,gCmts]=await Promise.all([
+    const [posts,comments,likes,greets,qs,notice,links,members,gLikes]=await Promise.all([
       SB.sel('v_posts'),SB.sel('v_comments'),SB.sel('v_likes'),SB.sel('v_greetings'),
       SB.sel('v_questions'),SB.sel('v_notice'),SB.sel('v_links'),SB.sel('v_members'),
-      SB.sel('v_greeting_likes'),SB.sel('v_greeting_comments')]);
+      SB.sel('v_greeting_likes')]);
     const t=s=>s?Date.parse(s):null;
     DB.posts=posts.map(p=>({id:p.id,nick:p.nick,nickKey:p.nick_key,body:p.body,
       createdAt:t(p.created_at),editedAt:t(p.edited_at),pinned:p.pinned,hidden:p.hidden,
@@ -1064,11 +1064,9 @@ const ApiSupabase={
     DB.likes=likes.map(l=>({_id:l.post_id+'_'+l.nick_key,postId:l.post_id,nickKey:l.nick_key}));
     DB.greetings=greets.map(g=>({_id:g.member_id,memberId:g.member_id,nick:g.nick,nickKey:g.nick_key,
       answers:g.answers,createdAt:t(g.created_at),editedAt:t(g.edited_at),hidden:false,
-      likeCount:+g.like_count,commentCount:+g.comment_count}));
+      likeCount:+g.like_count}));
     DB.greetingLikes=gLikes.map(l=>({_id:l.greeting_id+'_'+l.nick_key,
       greetingId:l.greeting_id,nickKey:l.nick_key}));
-    DB.greetingComments=gCmts.map(c=>({_id:c.id,id:c.id,greetingId:c.greeting_id,
-      nick:c.nick,nickKey:c.nick_key,body:c.body,createdAt:t(c.created_at),hidden:c.hidden}));
     DB.questions=qs.map(q=>({_id:q.id,id:q.id,nick:q.nick,nickKey:q.nick_key,day:q.day,body:q.body,
       createdAt:t(q.created_at),answer:q.answer,answeredAt:t(q.answered_at),hidden:false}));
     DB.notices=(notice||[]).map(n=>({_id:'notice_active',active:n.active,body:n.body}));
@@ -1096,9 +1094,6 @@ const ApiSupabase={
   createComment(pid,b){ return SB.rpc('fc_create_comment',{p_token:this.token,p_post_id:pid,p_body:b}); },
   deleteComment(id){ return SB.rpc('fc_delete_comment',{p_token:this.token,p_id:id}); },
   toggleGreetingLike(id){ return SB.rpc('fc_toggle_greeting_like',{p_token:this.token,p_greeting_id:id}); },
-  createGreetingComment(gid,b){ return SB.rpc('fc_create_greeting_comment',
-    {p_token:this.token,p_greeting_id:gid,p_body:b}); },
-  deleteGreetingComment(id){ return SB.rpc('fc_delete_greeting_comment',{p_token:this.token,p_id:id}); },
   createQuestion(b){ return SB.rpc('fc_create_question',{p_token:this.token,p_body:b}); },
   report(t,id,why){ return SB.rpc('fc_report',{p_token:this.token,p_type:t,p_target:id,p_reason:why}); },
   hidePost(id,h,why){ return SB.rpc('fc_admin_hide_post',{p_token:this.token,p_id:id,p_hidden:h,p_reason:why}); },
@@ -1239,17 +1234,6 @@ const ApiDoc={
     const n=DB.greetingLikes.filter(l=>String(l.greetingId)===String(greetingId)).length+(had?-1:1);
     return {liked:!had,count:Math.max(0,n)};
   },
-  async createGreetingComment(greetingId,body){
-    if(!Me.row.greetedAt) throw new Error('NEED_GREET');
-    const now=Date.now();
-    await Store.set('greetingComments','gc_'+greetingId+'_'+now+'_'+Math.random().toString(36).slice(2,6),
-      {greetingId,nick:Me.nick,nickKey:Me.key,body,createdAt:now,hidden:false});
-  },
-  async deleteGreetingComment(id){
-    const c=DB.greetingComments.find(x=>x._id===id); if(!c) throw new Error('NOT_FOUND');
-    if(c.nickKey!==Me.key && !Me.row.isAdmin) throw new Error('NOT_MINE');
-    await Store.del('greetingComments',id);
-  },
   async createQuestion(body){
     if(!Me.row.greetedAt) throw new Error('NEED_GREET');
     const day=kstDay();
@@ -1273,8 +1257,6 @@ const ApiDoc={
     a?{answer:a,answeredAt:Date.now(),answeredBy:Me.key}:{answer:null,answeredAt:null,answeredBy:null}); },
   async hideGreeting(memberId){
     const g=DB.greetings.find(x=>x._id===memberId||x.memberId===memberId); if(!g) return;
-    for(const c of DB.greetingComments.filter(c=>String(c.greetingId)===String(g._id)))
-      await Store.del('greetingComments',c._id);
     for(const l of DB.greetingLikes.filter(l=>String(l.greetingId)===String(g._id)))
       await Store.del('greetingLikes',l._id);
     await Store.patch('greetings',g._id,{hidden:true});
@@ -1560,18 +1542,14 @@ function renderPosts(){
   }else sorted.slice(0,shown).forEach(p=>rl.appendChild(postCard(p)));
   $('#moreRow').hidden=sorted.length<=shown;
 }
-/** 인사 카드 아래 줄: 사우나돌 + 댓글. 댓글은 눌러서 여는 창에서 단다. */
+/** 인사 카드 아래 줄: 사우나돌 하나. 대화는 주접 쪽에서 한다. */
 function greetFoot(g){
   const gid=g.memberId!=null?g.memberId:g._id;
   const liked=DB.greetingLikes.some(l=>String(l.greetingId)===String(gid)&&l.nickKey===Me.key);
   const likeN=g.likeCount!=null?g.likeCount
              :DB.greetingLikes.filter(l=>String(l.greetingId)===String(gid)).length;
-  const cmtN=DB.greetingComments.filter(c=>String(c.greetingId)===String(gid)&&!c.hidden).length;
   const foot=el('div','foot'); foot.style.marginTop='var(--s3)';
   foot.appendChild(stoneButton({id:gid},'greet',likeN,liked));
-  const cm=el('button','btn btn--sm btn--ghost','댓글 '+cmtN); cm.type='button';
-  cm.addEventListener('click',()=>openDetail(gid,'greet'));
-  foot.appendChild(cm);
   return foot;
 }
 function renderGreetings(){
@@ -1676,15 +1654,14 @@ function renderMyStats(){
 
   const mine=DB.posts.filter(p=>p.nickKey===Me.key);
   const mineIds=new Set(mine.map(p=>String(p.id)));
-  /* 인사에 오간 돌과 댓글도 같이 센다. 보는 사람에게는 다 같은 공감이다. */
+  /* 인사에 올라온 돌도 같이 센다. 보는 사람에게는 다 같은 공감이다. */
   const myGreet=DB.greetings.find(g=>g.nickKey===Me.key);
   const myGid=myGreet?String(myGreet.memberId!=null?myGreet.memberId:myGreet._id):'';
   const got=DB.likes.filter(l=>mineIds.has(String(l.postId))).length
           + DB.greetingLikes.filter(l=>String(l.greetingId)===myGid).length;
   const gave=DB.likes.filter(l=>l.nickKey===Me.key).length
            + DB.greetingLikes.filter(l=>l.nickKey===Me.key).length;
-  const cmts=DB.comments.filter(c=>c.nickKey===Me.key&&!c.hidden).length
-           + DB.greetingComments.filter(c=>c.nickKey===Me.key&&!c.hidden).length;
+  const cmts=DB.comments.filter(c=>c.nickKey===Me.key&&!c.hidden).length;
   const qs=DB.questions.filter(q=>q.nickKey===Me.key).length;
   const answered=DB.questions.filter(q=>q.nickKey===Me.key&&q.answer).length;
 
@@ -1990,17 +1967,12 @@ function updCount(sel,out,max){
 }
 
 /* --- 글 상세 + 댓글 ---------------------------------------------- */
-let detailId=null, detailKind='post';
+let detailId=null;
 /* 쓰다 만 댓글은 글 단위로 들고 있는다. 다시 그려도, 닫았다 열어도 남는다. */
 const cmtDraft=Object.create(null);
-function openDetail(id,kind){
-  detailId=id; detailKind=kind||'post';
-  $('#detailTitle').textContent = detailKind==='greet' ? '인사 한 장' : '주접 한 편';
-  drawDetail(); $('#dlgDetail').showModal();
-}
-function drawDetail(){ return detailKind==='greet' ? drawGreetDetail() : drawPostDetail(); }
+function openDetail(id){ detailId=id; drawDetail(); $('#dlgDetail').showModal(); }
 
-function drawPostDetail(){
+function drawDetail(){
   const p=DB.posts.find(x=>x.id===detailId); const box=$('#detailBody');
   if(!p){box.textContent='이 글은 내려갔어요.';return;}
   box.innerHTML='';
@@ -2019,32 +1991,7 @@ function drawPostDetail(){
   });
 }
 
-function drawGreetDetail(){
-  const g=DB.greetings.find(x=>String(x.memberId!=null?x.memberId:x._id)===String(detailId));
-  const box=$('#detailBody');
-  if(!g){box.textContent='이 인사는 내려갔어요.';return;}
-  const gid=g.memberId!=null?g.memberId:g._id;
-  box.innerHTML='';
-  const m=DB.members.find(x=>x.nickKey===g.nickKey);
-  const head=el('div','card greet');
-  head.innerHTML=`<div class="who"><span class="nick">${esc(g.nick)}</span>`+
-    `<span class="t-meta">${esc(ago(g.createdAt))}</span>`+
-    (m?`<span class="who__tags"><span class="badge">${daysSince(m.joinedDay)}일째</span></span>`:'')+
-    `</div><dl style="margin:0">`+
-    GREET_Q.filter(q=>g.answers&&g.answers[q.k]).map(q=>
-      `<dt>${esc(q.label)}</dt><dd>${esc(g.answers[q.k])}</dd>`).join('')+`</dl>`;
-  box.appendChild(head);
-  drawComments(box, DB.greetingComments.filter(c=>String(c.greetingId)===String(gid)), {
-    draftKey:'g'+gid,
-    empty:'아직 아무도 인사를 안 받아줬어요. 환영 한마디 어떠세요?',
-    placeholder:'어서 오세요! 저도 열탕파입니다.',
-    reportType:'greeting_comment',
-    create:body=>Api.createGreetingComment(gid,body),
-    remove:id=>Api.deleteGreetingComment(id),
-  });
-}
-
-/** 댓글 묶음 + 입력칸. 주접과 인사가 같은 모양을 쓴다. */
+/** 댓글 묶음 + 입력칸. */
 function drawComments(box, rows, opt){
   const cs=rows.slice().sort((a,b)=>a.createdAt-b.createdAt);
   if(!cs.length){
@@ -2164,11 +2111,9 @@ async function openReports(){
 
   rows.forEach(r=>{
     const isPost = r.targetType==='post';
-    const isGreetCmt = r.targetType==='greeting_comment';
     const target = isPost ? DB.posts.find(x=>String(x.id)===String(r.targetId))
-                 : isGreetCmt ? DB.greetingComments.find(x=>String(x._id)===String(r.targetId))
                           : DB.comments.find(x=>String(x._id)===String(r.targetId));
-    const kindLabel = isPost?'주접':isGreetCmt?'인사 댓글':'댓글';
+    const kindLabel = isPost?'주접':'댓글';
     const sep=String(r.reason||'').indexOf(' · ');
     const cat=sep<0?String(r.reason||'기타'):r.reason.slice(0,sep);
     const memo=sep<0?'':r.reason.slice(sep+3);
@@ -2218,12 +2163,6 @@ async function openReports(){
              await reload(); openReports(); }
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(ban);
-    }
-    if(target&&isGreetCmt){
-      const go=el('button','btn btn--sm','인사 보기'); go.type='button';
-      go.addEventListener('click',()=>{ $('#dlgReports').close();
-        openDetail(target.greetingId,'greet'); });
-      foot.appendChild(go);
     }
     if(target&&isPost){
       const go=el('button','btn btn--sm','글 보기'); go.type='button';
@@ -2482,8 +2421,7 @@ function drawSteam(){
 }
 
 /* --- 부팅 ------------------------------------------------------- */
-const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings',
-  'greetingLikes','greetingComments'];
+const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings','greetingLikes'];
 
 async function boot(){
   drawSteam();
