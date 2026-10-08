@@ -1,0 +1,1807 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>업다운 팬클럽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   업다운 팬클럽 — 금샘탕을 운영하시는 강다운 사장님 비공식 팬클럽
+   스킨 A(손그림 도감) / 스킨 B(픽셀) 2종. DOM은 공용, 토큰만 교체.
+   =================================================================== */
+
+/* --- 0. 리셋 ---------------------------------------------------- */
+*,*::before,*::after{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;color-scheme:light dark;}
+body{margin:0;}
+img,svg{max-width:100%;}
+[hidden]{display:none!important;}
+button,input,textarea,select{font:inherit;color:inherit;}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+
+/* --- 1. 공용 구조 토큰 (스킨 무관) ------------------------------ */
+:root{
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px;
+  --s6:24px; --s8:32px; --s10:40px; --s12:48px; --s16:64px;
+  --wrap:1024px; --gutter:16px; --tap:44px;
+  --dur-fast:120ms; --dur:200ms; --dur-slow:420ms;
+
+  --t-hero:42px; --t-logo:22px; --t-count:30px;
+  --t-h1:24px; --t-h2:20px; --t-h3:17px;
+  --t-body:15px; --t-ui:14px; --t-meta:12px; --t-hand:16px;
+}
+@media (min-width:768px){
+  :root{
+    --t-hero:68px; --t-logo:26px; --t-count:36px;
+    --t-h1:28px; --t-h2:22px; --t-h3:18px;
+    --t-body:16px; --t-ui:15px; --t-meta:13px; --t-hand:17px;
+  }
+}
+
+/* --- 2. 스킨 A : 손그림(도감) ----------------------------------- */
+/* --- 3. 스킨 B : 픽셀 ------------------------------------------- */
+:root{
+  --bg:#5AC8E0; --bg-deep:#4EBCD6; --bg-soft:#A8E6F2;
+  --card:#F7F7EF; --card-2:#E0E6E0;
+  --ink:#0F1626; --line:#0F1626; --ink-soft:#3C4A66;
+  --grey:#4E5F78; --grey-mute:#9AA8BC; --grey-line:#C3CDD9;
+  --yolk:#FFC90E; --yolk-deep:#E08A00;
+  --red:#D42121; --blue:#1B8FE0; --blue-ink:#0F5FB0;
+  --leaf:#2FA84F; --leaf-ink:#1E7A38; --plum:#C2185B;
+  --egg-w:#FFFFFF;
+  --logo-blue:#10429E; --logo-red:#E0201F;
+
+  --bd:3px solid var(--line);
+  --bd-thick:4px solid var(--line);
+  --r-a:0; --r-b:0; --r-pill:0;
+  --sh:4px 4px 0 var(--line);
+  --sh-sm:3px 3px 0 var(--line);
+  --sh-lg:6px 6px 0 var(--line);
+  --sh-press:0 0 0 var(--line);
+  --clip:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),
+                 calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px);
+  --tex:repeating-linear-gradient(0deg,transparent 0 3px,
+        color-mix(in srgb,var(--ink) 6%,transparent) 3px 4px);
+  --ease:steps(4,end);
+
+  --font-display:'Press Start 2P','Black Han Sans','Noto Sans KR',sans-serif;
+  --font-head:'Silkscreen','Do Hyeon','Noto Sans KR',sans-serif;
+  --font-hand:'Silkscreen','Do Hyeon','Noto Sans KR',sans-serif;
+  --font-body:'Silkscreen','Do Hyeon','Noto Sans KR',sans-serif;
+
+  /* 픽셀은 정수 px만 쓴다 — 힌팅이 깨지면 도트감이 죽는다 */
+  --t-hero:40px; --t-logo:20px; --t-count:28px;
+  --t-h1:24px; --t-h2:20px; --t-h3:16px;
+  --t-body:14px; --t-ui:12px; --t-meta:10px; --t-hand:12px;
+
+  -webkit-font-smoothing:none;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeSpeed;
+}
+@media (min-width:768px){
+  :root{
+    --t-hero:64px; --t-logo:24px; --t-count:32px;
+    --t-h1:28px; --t-h2:20px; --t-h3:16px;
+    --t-body:16px; --t-ui:14px; --t-meta:12px; --t-hand:14px;
+  }
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1026; --bg-deep:#080D20; --bg-soft:#1C2A50;
+    --card:#151C38; --card-2:#101733;
+    --ink:#EAF3E0; --line:#EAF3E0; --ink-soft:#C2D0BC;
+    --grey:#8FA0C0; --grey-mute:#4B5A80; --grey-line:#2A3660;
+    --yolk:#FFD23F; --yolk-deep:#C98A00;
+    --red:#FF5C5C; --blue:#4FA9FF; --blue-ink:#79C3FF;
+    --leaf:#2FA84F; --leaf-ink:#6BE59A; --plum:#FF6BA8;
+    --egg-w:#EAF3E0; --logo-blue:#6FB4FF; --logo-red:#FF5C5C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1026; --bg-deep:#080D20; --bg-soft:#1C2A50;
+  --card:#151C38; --card-2:#101733;
+  --ink:#EAF3E0; --line:#EAF3E0; --ink-soft:#C2D0BC;
+  --grey:#8FA0C0; --grey-mute:#4B5A80; --grey-line:#2A3660;
+  --yolk:#FFD23F; --yolk-deep:#C98A00;
+  --red:#FF5C5C; --blue:#4FA9FF; --blue-ink:#79C3FF;
+  --leaf:#2FA84F; --leaf-ink:#6BE59A; --plum:#FF6BA8;
+  --egg-w:#EAF3E0; --logo-blue:#6FB4FF; --logo-red:#FF5C5C;
+}
+body{
+  background:
+    conic-gradient(from 90deg at 50% 50%,
+      var(--bg) 0 25%, var(--bg-deep) 0 50%,
+      var(--bg) 0 75%, var(--bg-deep) 0 100%) 0 0 / 16px 16px,
+    var(--bg);
+  background-attachment:fixed;
+  line-height:1.6;
+}
+svg{shape-rendering:crispEdges;}
+.lat{font-size:.74em;}
+
+/* --- 4. 본문 기본 ----------------------------------------------- */
+body{
+  font:400 var(--t-body)/1.7 var(--font-body);
+  color:var(--ink);
+  background:var(--bg);
+  min-height:100%;
+}
+h1,h2,h3,p,li,button,label,summary{word-break:keep-all;overflow-wrap:anywhere;}
+h1,h2,h3{margin:0;text-wrap:balance;}
+p{margin:0;}
+a{color:var(--blue-ink);}
+:focus-visible{outline:3px solid var(--blue-ink);outline-offset:2px;}
+:focus-visible{outline-offset:0;}
+.t-logo{font:400 var(--t-logo)/1.1 var(--font-display);letter-spacing:-.01em;}
+.t-count{font:400 var(--t-count)/1 var(--font-display);font-variant-numeric:tabular-nums;}
+.t-ui{font:500 var(--t-ui)/1.4 var(--font-body);}
+.t-meta{font:400 var(--t-meta)/1.4 var(--font-body);color:var(--grey);}
+.t-hand{font:400 var(--t-hand)/1.5 var(--font-hand);}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+</style>
+<style>
+/* --- 5. 레이아웃 ------------------------------------------------- */
+.wrap{max-width:var(--wrap);margin-inline:auto;padding-inline:var(--gutter);}
+main{padding-bottom:104px;}
+@media (min-width:900px){
+  .cols{display:grid;grid-template-columns:1fr 300px;gap:var(--s6);align-items:start;}
+  .aside{position:sticky;top:calc(var(--s4) + env(safe-area-inset-top,0px));
+         display:flex;flex-direction:column;gap:var(--s3);}
+}
+section{margin-block:var(--s5);}
+.stack{display:flex;flex-direction:column;gap:var(--s3);}
+.row{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;}
+
+/* --- 6. 카드 ----------------------------------------------------- */
+.card{
+  background:var(--card);background-image:var(--tex);
+  border:var(--bd);border-radius:var(--r-a);box-shadow:var(--sh);
+  clip-path:var(--clip);
+  padding:var(--s3) var(--s4);
+}
+.card{box-shadow:none;position:relative;}
+/* 픽셀: clip-path가 box-shadow를 잘라먹어서 그림자를 래퍼로 뺀다 */
+.card-wrap{box-shadow:var(--sh);}
+.card-wrap{border-radius:var(--r-a);}
+/* --- 7. 버튼 ----------------------------------------------------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--s1);
+  min-height:38px;padding:0 var(--s4);
+  font:500 var(--t-ui)/1 var(--font-body);
+  background:var(--card);color:var(--ink);
+  border:var(--bd);border-radius:var(--r-pill);box-shadow:var(--sh-sm);
+  clip-path:var(--clip);cursor:pointer;
+  transition:transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease);
+}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:var(--sh);}
+.btn:active{transform:translate(2px,2px);box-shadow:var(--sh-press);}
+.btn--primary{background:var(--yolk);color:#141414;font-weight:700;}
+[data-theme="dark"] .btn--primary,
+.btn--primary{color:#141414;}
+.btn--danger{background:var(--red);color:#fff;}
+.btn--ghost{background:transparent;box-shadow:none;border-style:dashed;}
+.btn--ghost:hover{background:var(--bg-soft);box-shadow:none;transform:none;}
+.btn--sm{min-height:32px;padding:0 var(--s3);font-size:var(--t-meta);}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:var(--sh-sm);}
+.btn{border-radius:0;}
+
+/* --- 8. 입력 ----------------------------------------------------- */
+.field{display:flex;flex-direction:column;gap:var(--s1);}
+.field > label{font:500 var(--t-ui)/1.4 var(--font-body);}
+.field .hint{font:400 var(--t-meta)/1.4 var(--font-body);color:var(--grey);}
+input[type=text],input[type=password],input[type=url],textarea{
+  width:100%;padding:var(--s3);
+  background:var(--card-2);color:var(--ink);
+  border:var(--bd);border-radius:var(--r-b);
+  font:400 var(--t-body)/1.6 var(--font-body);
+}
+input,textarea{border-radius:0;}
+textarea{resize:vertical;min-height:110px;}
+input:focus,textarea:focus{background:var(--bg-soft);outline:3px solid var(--blue-ink);outline-offset:1px;}
+.counter{font:400 var(--t-meta)/1 var(--font-body);color:var(--grey);text-align:right;
+         font-variant-numeric:tabular-nums;}
+.counter.over{color:var(--red);font-weight:700;}
+
+/* PIN 입력 4칸 / 8칸 */
+.pin{display:flex;gap:var(--s2);justify-content:center;}
+.pin input{width:46px;height:56px;text-align:center;font:700 22px/1 var(--font-display);
+           padding:0;font-variant-numeric:tabular-nums;}
+.pin.shake{animation:shake .4s;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}
+                 40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+/* --- 9. 뱃지 / 태그 ---------------------------------------------- */
+.badge{display:inline-flex;align-items:center;gap:4px;
+  padding:3px var(--s2);border:var(--bd);border-radius:var(--r-pill);
+  font:500 var(--t-meta)/1.4 var(--font-body);background:var(--card-2);}
+.badge{border-radius:0;border-width:2px;}
+.badge--hot{background:var(--plum);color:#fff;border-color:var(--line);}
+.badge--pin{background:var(--yolk);color:#141414;}
+.badge--admin{background:var(--red);color:#fff;}
+.badge--wait{background:var(--card-2);color:var(--grey);}
+.badge--done{background:var(--leaf);color:#fff;}
+
+/* --- 10. 섹션 헤더 ----------------------------------------------- */
+.sec-head{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s1);}
+.sec-head h2{font:400 var(--t-h2)/1.3 var(--font-head);}
+.sec-head .line{flex:1;height:0;border-top:2px dashed var(--line);opacity:.45;}
+.sec-sub{font:400 var(--t-meta)/1.5 var(--font-body);color:var(--ink-soft);margin-bottom:var(--s2);line-height:1.45;}
+
+/* --- 11. 툴바 (히어로 아래 한 줄) --- */
+.toolbar{justify-content:center;gap:var(--s2);margin-bottom:var(--s5);}
+.counter-chip{display:inline-flex;align-items:baseline;gap:3px;
+  padding:5px var(--s3);background:var(--yolk);color:#141414;
+  border:var(--bd);border-radius:var(--r-pill);clip-path:var(--clip);}
+.counter-chip .n{font:400 var(--t-h2)/1 var(--font-display);font-variant-numeric:tabular-nums;}
+.counter-chip .u{font:500 var(--t-meta)/1 var(--font-body);}
+.counter-chip{border-radius:0;}
+
+/* --- 12. 히어로 + 레터링 ----------------------------------------- */
+.hero{display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+      gap:var(--s2);padding-block:var(--s5) var(--s2);}
+.steam{display:flex;gap:2px;}
+.steam svg{width:16px;height:54px;flex:none;}
+.steam svg:nth-child(1){height:40px;transform:rotate(-6deg);}
+.steam svg:nth-child(2){height:58px;}
+.steam svg:nth-child(3){height:46px;transform:rotate(5deg);}
+.steam-r{transform:scaleX(-1);}
+@media (max-width:420px){.steam svg:nth-child(3){display:none;}}
+.steam svg{transform:none!important;width:16px;}
+.steam svg:nth-child(1){height:32px;}
+.steam svg:nth-child(2){height:48px;}
+.steam svg:nth-child(3){height:40px;}
+
+/* 금샘탕 로고 스타일 — 납작한 파랑 글씨에 빨강 포인트. 아웃라인 없음. */
+.lettering{
+  font:400 var(--t-hero)/1 var(--font-display);
+  letter-spacing:-.06em;
+  color:var(--logo-blue);
+  -webkit-text-stroke:0;
+  text-align:center;display:block;margin:0;
+  transform:rotate(-2deg);
+}
+.lettering span{display:inline-block;}
+.lettering .sp{width:.18em;}
+.lettering .hot{color:var(--logo-red);}
+
+.hero-sub{text-align:center;margin-top:var(--s2);font:400 var(--t-hand)/1.5 var(--font-hand);
+          color:var(--ink-soft);}
+
+/* --- 13. 공감 버튼 ----------------------------------------------- */
+.like{position:relative;display:inline-flex;align-items:center;gap:6px;
+  min-height:38px;padding:0 var(--s3);cursor:pointer;
+  background:var(--card-2);border:var(--bd);border-radius:var(--r-pill);
+  box-shadow:var(--sh-sm);clip-path:var(--clip);
+  font:500 var(--t-ui)/1 var(--font-body);font-variant-numeric:tabular-nums;}
+.like{border-radius:0;}
+.like svg{width:22px;height:19px;flex:none;}
+.like[aria-pressed="true"]{background:var(--yolk);color:#141414;}
+.like:active{transform:translate(2px,2px);box-shadow:var(--sh-press);}
+.like .puff{position:absolute;left:50%;top:-4px;width:10px;height:22px;
+  pointer-events:none;opacity:0;}
+.like.pop .puff{animation:puff var(--dur-slow) var(--ease);}
+@keyframes puff{0%{opacity:0;transform:translate(-50%,6px) scale(.6)}
+  40%{opacity:1}100%{opacity:0;transform:translate(-50%,-26px) scale(1.1)}}
+.like.pop .puff{animation:puffpx .48s steps(4,end);}
+@keyframes puffpx{0%{opacity:1;transform:translate(-50%,0)}
+  100%{opacity:0;transform:translate(-50%,-24px)}}
+
+/* 배경 위에 직접 놓이는 메타 텍스트 — 카드 안이 아니라 대비를 올려야 한다 */
+main > .wrap > footer .t-meta,.hero-sub{color:var(--ink-soft);}
+
+/* --- 14. 빈 상태 ------------------------------------------------- */
+.empty{display:flex;flex-direction:column;align-items:center;gap:var(--s2);
+  padding:var(--s4) var(--s4);text-align:center;color:var(--ink-soft);}
+.empty svg{width:56px;height:48px;}
+.empty p{font:400 var(--t-hand)/1.6 var(--font-hand);}
+
+/* --- 15. 모달 --------------------------------------------------- */
+dialog{padding:0;border:0;background:transparent;max-width:none;max-height:none;
+       width:100%;height:100%;margin:0;overflow:visible;}
+dialog::backdrop{background:rgba(10,30,36,.55);}
+dialog::backdrop{
+  background:repeating-conic-gradient(rgba(8,12,30,.72) 0 25%,transparent 0 50%) 0 0/6px 6px,
+             rgba(8,12,30,.5);}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:88svh;overflow:auto;
+  background:var(--card);background-image:var(--tex);
+  border-top:var(--bd-thick);border-radius:24px 24px 0 0;
+  padding:var(--s5) var(--gutter) calc(var(--s6) + env(safe-area-inset-bottom,0px));}
+.sheet{border-radius:0;}
+@media (min-width:640px){
+  .sheet{position:relative;margin:6vh auto;max-width:540px;left:auto;right:auto;bottom:auto;
+    border:var(--bd-thick);border-radius:var(--r-a);box-shadow:var(--sh-lg);padding:var(--s6);}
+  .sheet{border-radius:0;}
+}
+.sheet h2{font:400 var(--t-h1)/1.25 var(--font-head);margin-bottom:var(--s2);}
+.sheet .body{display:flex;flex-direction:column;gap:var(--s4);margin-top:var(--s4);}
+.sheet .actions{display:flex;gap:var(--s2);justify-content:flex-end;margin-top:var(--s5);flex-wrap:wrap;}
+.sheet .actions .btn{flex:1 1 auto;}
+@media (min-width:640px){.sheet .actions .btn{flex:0 0 auto;}}
+.sheet-close{position:absolute;top:var(--s3);right:var(--s3);width:var(--tap);height:var(--tap);
+  border:0;background:transparent;cursor:pointer;font-size:22px;line-height:1;color:var(--ink);}
+
+/* --- 16. FAB / 토스트 -------------------------------------------- */
+.fab{position:fixed;right:var(--gutter);z-index:30;
+  bottom:calc(var(--s3) + env(safe-area-inset-bottom,0px));
+  min-height:46px;padding:0 var(--s4);font-weight:700;
+  background:var(--yolk);color:#141414;border:var(--bd-thick);
+  border-radius:var(--r-pill);box-shadow:var(--sh-lg);clip-path:var(--clip);cursor:pointer;}
+.fab{border-radius:0;}
+.toast-host{position:fixed;left:50%;transform:translateX(-50%);z-index:60;
+  bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:var(--s2);width:min(92vw,420px);}
+.toast{background:var(--card);border:var(--bd);border-radius:var(--r-b);box-shadow:var(--sh);
+  padding:var(--s3) var(--s4);font:500 var(--t-ui)/1.5 var(--font-body);clip-path:var(--clip);}
+.toast{border-radius:0;}
+.toast--bad{background:var(--red);color:#fff;}
+.toast--good{background:var(--yolk);color:#141414;}
+
+/* --- 17. 글/댓글 ------------------------------------------------- */
+.post .who{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2);flex-wrap:wrap;}
+.post .nick{font:500 var(--t-ui)/1.3 var(--font-body);}
+.post .body{white-space:pre-wrap;margin-block:var(--s2);}
+.post .foot{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3);flex-wrap:wrap;}
+.post--hidden .body{color:var(--grey);font-style:italic;}
+.comment{border-top:1px solid var(--grey-line);padding-top:var(--s3);margin-top:var(--s3);}
+.comment .body{white-space:pre-wrap;}
+.qa{border-left:4px solid var(--yolk);padding-left:var(--s3);margin-top:var(--s3);}
+.notice{background:var(--yolk);color:#141414;border:var(--bd);border-radius:var(--r-b);
+  padding:var(--s3) var(--s4);box-shadow:var(--sh-sm);clip-path:var(--clip);
+  display:flex;gap:var(--s2);align-items:flex-start;}
+.notice{border-radius:0;}
+
+/* 링크 카드 */
+.link-card{display:flex;align-items:center;gap:var(--s3);text-decoration:none;color:inherit;}
+.link-card .ico{width:34px;height:34px;flex:none;display:grid;place-items:center;
+  background:var(--bg-soft);border:var(--bd);border-radius:var(--r-b);}
+.link-card .ico{border-radius:0;}
+.link-card .pf{font:500 var(--t-h3)/1.25 var(--font-head);}
+.link-card .ds{font:400 var(--t-meta)/1.35 var(--font-body);color:var(--grey);}
+.link-card .ar{margin-left:auto;font-size:18px;color:var(--grey);}
+
+/* 인사 캐러셀 — 모바일은 가로 스냅, 데스크탑은 세로 */
+.greet-scroll{display:grid;grid-auto-flow:column;grid-auto-columns:82%;gap:var(--s3);
+  overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:var(--s2);
+  margin-inline:calc(var(--gutter)*-1);padding-inline:var(--gutter);}
+.greet-scroll > *{scroll-snap-align:start;}
+@media (min-width:640px){
+  .greet-scroll{grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;
+    margin-inline:0;padding-inline:0;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+}
+.greet dt{font:500 var(--t-meta)/1.4 var(--font-body);color:var(--grey);margin-top:var(--s2);}
+.greet dd{margin:2px 0 0;font:400 var(--t-body)/1.6 var(--font-body);}
+
+/* --- 18. 모션 줄이기 --------------------------------------------- */
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;}
+  .btn:hover,.card{transform:none!important;}
+}
+</style>
+</head>
+<body>
+
+<main>
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="steam steam-l" aria-hidden="true" data-steam></div>
+      <h1 class="lettering" aria-label="업다운 팬클럽">
+        <span>업</span><span>다</span><span>운</span><span class="sp"></span><span class="hot">팬</span><span>클</span><span>럽</span>
+      </h1>
+      <div class="steam steam-r" aria-hidden="true" data-steam></div>
+    </div>
+    <p class="hero-sub">금샘탕을 운영하시는 강다운 사장님을 좋아하는 사람들이 모여서 주접 떠는 곳이에요</p>
+
+    <div class="row toolbar">
+      <span class="counter-chip" id="dayChip" hidden>
+        <span class="n"><span class="lat" id="dayNum">00</span></span><span class="u">일째 입덕 ing..</span>
+      </span>
+      <button class="btn btn--sm" type="button" id="rulesBtn">활동 규칙</button>
+      <button class="btn btn--sm" type="button" id="meBtn">이름표 달기</button>
+      <button class="btn btn--sm" type="button" id="jumpHello">인사해요</button>
+    </div>
+
+    <div id="noticeSlot"></div>
+
+    <div class="cols">
+      <div>
+        <section id="hot" hidden>
+          <div class="sec-head"><h2>인기글</h2><span class="line"></span></div>
+          <p class="sec-sub">요즘 제일 뜨거운 주접들</p>
+          <div class="stack" id="hotList"></div>
+        </section>
+
+        <section id="recent">
+          <div class="sec-head"><h2>최근 주접</h2><span class="line"></span></div>
+          <p class="sec-sub">방금 올라온 것들부터</p>
+          <div class="stack" id="recentList"></div>
+          <div class="row" id="moreRow" style="justify-content:center;margin-top:var(--s3);" hidden>
+            <button class="btn btn--ghost" type="button" id="moreBtn">더 보기</button>
+          </div>
+        </section>
+
+        <section id="hello">
+          <div class="sec-head"><h2>인사해요</h2><span class="line"></span></div>
+          <p class="sec-sub">여기 한 줄 남기셔야 주접 쓰실 수 있어요. 순서가 좀 깐깐하죠? 그래도 이게 제일 빠릅니다.</p>
+          <div class="greet-scroll" id="greetList"></div>
+          <div class="row" style="margin-top:var(--s3);">
+            <button class="btn btn--primary" type="button" id="greetBtn">인사 남기기</button>
+          </div>
+        </section>
+
+        <section id="fanmeeting">
+          <div class="sec-head"><h2>팬미팅</h2><span class="line"></span></div>
+          <p class="sec-sub">사장님한테 여쭤보는 칸이에요. 하루에 딱 한 장만 받습니다. 아껴 쓰세요.<br>
+             사장님이 들르셔서 댓글로 답해주시거나 금샘탕 계정에 올려주실 수도 있어요.</p>
+          <div class="card-wrap" style="margin-bottom:var(--s3);">
+            <div class="card">
+              <div class="field">
+                <label for="qBody">질문 남기기</label>
+                <textarea id="qBody" maxlength="200" style="min-height:84px"
+                  placeholder="사장님, 탕 온도는 매일 어떻게 맞추세요? 감으로 하시는 건가요?"></textarea>
+                <div class="row" style="justify-content:space-between">
+                  <span class="hint" id="qHint">5자 이상 200자 이하 · 오늘 남은 질문 1장</span>
+                  <span class="counter" id="qCount">0 / 200</span>
+                </div>
+              </div>
+              <div class="row" style="justify-content:flex-end;margin-top:var(--s2)">
+                <button class="btn btn--primary" type="button" id="qSubmit">질문 넣기</button>
+              </div>
+            </div>
+          </div>
+          <div class="stack" id="qList"></div>
+        </section>
+
+        <section id="links">
+          <div class="sec-head"><h2>사장님 활동 페이지</h2><span class="line"></span></div>
+          <p class="sec-sub">사장님이 직접 굴리시는 곳들이에요. 주접만 떨고 가면 섭섭하잖아요.</p>
+          <div class="stack" id="linkList"></div>
+          <div class="row" style="margin-top:var(--s4)" id="linkAdminRow" hidden>
+            <button class="btn btn--sm" type="button" id="linkEditBtn">링크 주소 채우기</button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="aside">
+        <div class="card-wrap">
+          <div class="card">
+            <h3 style="font:400 var(--t-h3)/1.3 var(--font-head);margin-bottom:var(--s2)">우리 탕 현황</h3>
+            <dl class="stack" style="gap:var(--s1);margin:0" id="statList"></dl>
+          </div>
+        </div>
+        <div class="card-wrap">
+          <div class="card" id="adminCard" hidden>
+            <h3 style="font:400 var(--t-h3)/1.3 var(--font-head);margin-bottom:var(--s2)">범쨩 패널</h3>
+            <div class="stack" style="gap:var(--s2)">
+              <button class="btn btn--sm" type="button" id="noticeBtn">공지 올리기</button>
+              <button class="btn btn--sm" type="button" id="reportBtn">신고함 열기</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer style="margin-top:var(--s8);padding-bottom:var(--s6);text-align:center">
+      <p class="t-meta">이 페이지는 팬이 만든 비공식 공간이에요. 금샘탕 공식 채널이 아닙니다.</p>
+      <p class="t-meta" style="margin-top:var(--s2)">
+        이상한 글을 보셨다면 글마다 있는 신고 버튼을 눌러주세요. 범쨩이 확인하고 치웁니다.</p>
+      <p class="t-meta" style="margin-top:var(--s2)" id="modeNote"></p>
+    </footer>
+  </div>
+</main>
+
+<button class="fab" type="button" id="writeFab">주접 쓰기</button>
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+<!-- ============================ 모달 ============================ -->
+
+<dialog id="dlgNick"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2>이름표 달기</h2>
+  <p class="t-meta">구경은 이름표 없이도 되지만, 공감이나 주접은 이름이 있어야 해요.</p>
+  <div class="body">
+    <div class="field">
+      <label for="nickIn">뭐라고 불러드릴까요?</label>
+      <input id="nickIn" type="text" maxlength="12" autocomplete="off"
+             placeholder="온탕러버" enterkeyhint="done">
+      <span class="hint">2~12자 · 한글, 영문, 숫자와 . _ - 만 쓸 수 있어요</span>
+      <span class="hint" id="nickErr" style="color:var(--red)"></span>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">그냥 구경할래요</button>
+    <button class="btn btn--primary" value="ok" type="submit" id="nickOk">입덕하기</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgPin"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2 id="pinTitle">비밀번호</h2>
+  <p class="t-meta" id="pinDesc"></p>
+  <div class="body">
+    <div class="pin" id="pinBoxes"></div>
+    <span class="hint" id="pinErr" style="color:var(--red);text-align:center"></span>
+    <p class="t-meta" id="pinWarn"></p>
+  </div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">취소</button>
+    <button class="btn btn--primary" value="ok" type="submit" id="pinOk">확인</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgRules"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2>업다운 팬클럽 이용 안내</h2>
+  <p class="t-hand" style="margin-top:var(--s2)">
+    여긴 마음 좀 풀어놓는 곳이지만,<br>
+    탕에도 지켜야 할 게 있듯이 여기도 몇 가지만 있어요.<br>
+    길게 안 씁니다. 여덟 줄만 읽고 들어오세요.</p>
+  <ol class="body" style="padding-left:1.2em;gap:var(--s3)" id="ruleList"></ol>
+  <p class="t-meta" style="margin-top:var(--s5)">
+    어기면 조용히 냉탕으로 모십니다. (글 숨김 또는 삭제)<br>
+    반복되면 이름표 회수예요.<br><br>
+    여긴 금샘탕 공식 채널이 아니라 팬들이 만든 비공식 공간이에요.<br>
+    사장님께 누가 되지 않는 선에서, 뜨겁게 놀다 가요.</p>
+  <div class="actions"><button class="btn btn--primary" value="ok" type="submit">알겠습니다</button></div>
+</form></dialog>
+
+<dialog id="dlgGreet"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2>인사해요</h2>
+  <p class="t-meta">한 줄씩만 남겨주시면 돼요. 잘 쓸 필요 전혀 없고요,<br>
+     이거 쓰시면 바로 주접 쓰실 수 있게 열립니다.</p>
+  <div class="body" id="greetFields"></div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">나중에</button>
+    <button class="btn btn--primary" value="ok" type="submit" id="greetOk">인사 남기기</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgPost"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2 id="postTitle">주접 쓰기</h2>
+  <p class="t-meta">사장님 얘기라면 뭐든 좋아요. 과하게 쓰셔도 됩니다.</p>
+  <div class="body">
+    <div class="field">
+      <label for="postBody" class="sr">주접 내용</label>
+      <textarea id="postBody" maxlength="500"
+        placeholder="오늘 사장님이 수건 두 장 주셨다. 두 장. 이게 무슨 의미인지 아는 사람?"></textarea>
+      <div class="row" style="justify-content:space-between">
+        <span class="hint">1~500자</span>
+        <span class="counter" id="postCount">0 / 500</span>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">취소</button>
+    <button class="btn btn--primary" value="ok" type="submit" id="postOk">올리기</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgDetail"><div class="sheet">
+  <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
+  <h2>주접 한 편</h2>
+  <div id="detailBody" style="margin-top:var(--s4)"></div>
+</div></dialog>
+
+<dialog id="dlgConfirm"><form method="dialog" class="sheet">
+  <h2 id="cfTitle">확인</h2>
+  <p style="margin-top:var(--s3)" id="cfMsg"></p>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit" id="cfNo">아니요</button>
+    <button class="btn btn--danger" value="ok" type="submit" id="cfYes">네</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgText"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2 id="txTitle"></h2>
+  <p class="t-meta" id="txDesc"></p>
+  <div class="body">
+    <label class="sr" for="txBody">내용</label>
+    <textarea id="txBody" maxlength="500" style="min-height:90px"></textarea>
+  </div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">취소</button>
+    <button class="btn btn--primary" value="ok" type="submit">저장</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgLinks"><form method="dialog" class="sheet">
+  <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
+  <h2>링크 주소 채우기</h2>
+  <p class="t-meta">주소를 넣은 카드만 페이지에 보입니다. 비워두면 안 보여요. 죽은 링크가 제일 없어 보이니까요.</p>
+  <div class="body" id="linkFields"></div>
+  <div class="actions">
+    <button class="btn" value="cancel" type="submit">취소</button>
+    <button class="btn btn--primary" value="ok" type="submit">저장</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlgReports"><div class="sheet">
+  <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
+  <h2>신고함</h2>
+  <div id="reportBody" style="margin-top:var(--s4)"></div>
+</div></dialog>
+
+<script>
+/* ===================================================================
+   업다운 팬클럽 — 앱 로직
+   =================================================================== */
+(function(){
+'use strict';
+
+/* --- 상수 ------------------------------------------------------- */
+const SCHEMA=1;
+const LIM={POST:500,COMMENT:200,GREET:200,Q:200,NICK_MIN:2,NICK_MAX:12,Q_MIN:5,POST_MIN:1};
+const POST_COOLDOWN=60*1000, PAGE=20;
+const TRIES=3, PIN_LOCK=5*60*1000, ADMIN_LOCK=10*60*1000;
+const LS={nick:'udfc.nick',lock:'udfc.lock',data:'udfc.data'};
+const ADMIN_NICK='범쨩';
+const BANNED=['관리자','운영자','어드민','admin','사장님','금샘탕','사우나범','범짱'];
+
+/* --- 시간: 전부 KST 기준 --------------------------------------- */
+const KST=9*3600000;
+const kstDay=(ms=Date.now())=>new Date(ms+KST).toISOString().slice(0,10);
+const dayNum=s=>{const[y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d);};
+/** 가입 당일이 1일째. KST 자정마다 하나씩 오른다. */
+const daysSince=jd=>Math.floor((dayNum(kstDay())-dayNum(jd))/86400000)+1;
+const tillMidnight=()=>86400000-((Date.now()+KST)%86400000);
+const hhmmss=ms=>{const s=Math.max(0,Math.floor(ms/1000));
+  return [s/3600|0,(s/60|0)%60,s%60].map(v=>String(v).padStart(2,'0')).join(':');};
+const ago=ms=>{const d=Date.now()-ms;
+  if(d<60000)return '방금'; if(d<3600000)return (d/60000|0)+'분 전';
+  if(d<86400000)return (d/3600000|0)+'시간 전'; if(d<7*86400000)return (d/86400000|0)+'일 전';
+  return kstDay(ms).replace(/-/g,'.');};
+
+/* --- DOM 유틸 --------------------------------------------------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!=null)n.textContent=x;return n;};
+/** 공유 데이터는 전부 남이 쓴 값이다. 화면에 넣을 땐 무조건 이걸 거친다. */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* --- 신원: 닉네임 → 경로 안전 id --------------------------------
+   Artifact DB 경로는 영숫자와 _ - . ~ : @ + 만 받는다. 한글을 id에
+   못 쓰므로 UTF-8 바이트를 hex로 바꿔 쓴다. 되돌릴 수 있고 충돌이
+   없어서 '중복을 문서 id로 막는다'는 설계가 그대로 산다. -------- */
+const nickKey=n=>String(n).normalize('NFC').trim().replace(/\s+/g,'').toLowerCase();
+const nickId=n=>[...new TextEncoder().encode(nickKey(n))].map(b=>b.toString(16).padStart(2,'0')).join('');
+
+function checkNick(raw){
+  const t=String(raw).normalize('NFC').trim();
+  if(t.length<LIM.NICK_MIN) return{err:'두 글자는 넘겨주세요'};
+  if(t.length>LIM.NICK_MAX) return{err:'열두 글자가 한계예요. 줄여주실 수 있죠?'};
+  if(!/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9._-]+$/.test(t)) return{err:'한글, 영문, 숫자랑 . _ - 만 쓸 수 있어요.'};
+  if(nickKey(t)===nickKey(ADMIN_NICK)) return{admin:true,nick:ADMIN_NICK};
+  if(BANNED.some(b=>nickKey(t)===nickKey(b))) return{err:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!'};
+  return{nick:t};
+}
+
+/* --- PIN 해시 ---------------------------------------------------
+   PBKDF2-SHA256 15만회. 닉네임을 salt에 섞어 같은 PIN이라도 사람마다
+   다른 해시가 나온다. 다만 이건 암호학적 방어가 아니라 매너 장치다.
+   salt가 공개돼 있고 4자리는 경우의 수가 1만이라 작정하면 뚫린다.
+   그래서 이 페이지는 개인정보를 아예 받지 않는다. --------------- */
+const ENC=new TextEncoder();
+const hex=b=>[...new Uint8Array(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+async function hashPin(pin,nick){
+  const salt=ENC.encode('updown-fanclub-v1:'+nickKey(nick));
+  try{
+    const k=await crypto.subtle.importKey('raw',ENC.encode(String(pin)),'PBKDF2',false,['deriveBits']);
+    const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},k,256);
+    return 'p1$'+hex(b);
+  }catch(e){
+    const b=await crypto.subtle.digest('SHA-256',ENC.encode('updown-fanclub-v1:'+nickKey(nick)+':'+pin));
+    return 's1$'+hex(b);
+  }
+}
+async function samePin(pin,nick,stored){
+  if(!stored) return false;
+  if(stored.startsWith('p1$')) return stored===await hashPin(pin,nick);
+  const b=await crypto.subtle.digest('SHA-256',ENC.encode('updown-fanclub-v1:'+nickKey(nick)+':'+pin));
+  return stored==='s1$'+hex(b);
+}
+
+/* --- 시도 제한 (이 기기 기준) ----------------------------------- */
+const lockGet=k=>{try{const a=JSON.parse(localStorage.getItem(LS.lock)||'{}'),l=a[k];
+  if(!l)return{tries:0,until:0};
+  if(l.until&&l.until<Date.now()){delete a[k];localStorage.setItem(LS.lock,JSON.stringify(a));return{tries:0,until:0};}
+  return l;}catch(e){return{tries:0,until:0};}};
+const lockHit=(k,max,ms)=>{try{const a=JSON.parse(localStorage.getItem(LS.lock)||'{}');
+  const l=a[k]||{tries:0,until:0};l.tries++;if(l.tries>=max)l.until=Date.now()+ms;
+  a[k]=l;localStorage.setItem(LS.lock,JSON.stringify(a));return l;}catch(e){return{tries:0,until:0};}};
+const lockClear=k=>{try{const a=JSON.parse(localStorage.getItem(LS.lock)||'{}');
+  delete a[k];localStorage.setItem(LS.lock,JSON.stringify(a));}catch(e){}};
+
+/* --- 저장소 어댑터 ----------------------------------------------
+   A) Artifact db  — 여러 명이 같은 데이터를 본다 (진짜 팬클럽)
+   B) localStorage — db가 없는 환경. 이 기기에서만 보인다.
+   인터페이스가 같아서 위쪽 코드는 어느 쪽인지 몰라도 된다. ------ */
+const Store={
+  mode:'local', db:null, _d:{}, _w:{},
+  async init(){
+    try{
+      const db=await Promise.race([
+        (window.claude&&window.claude.use)?window.claude.use('db'):Promise.resolve(null),
+        new Promise(r=>setTimeout(()=>r(null),10000))
+      ]);
+      if(db){this.db=db;this.mode='db';return 'db';}
+    }catch(e){}
+    this.mode='local';
+    try{this._d=JSON.parse(localStorage.getItem(LS.data)||'{}');}catch(e){this._d={};}
+    return 'local';
+  },
+  _save(){try{localStorage.setItem(LS.data,JSON.stringify(this._d));}catch(e){}},
+  _rows(c){return Object.entries(this._d[c]||{}).map(([_id,v])=>Object.assign({},v,{_id}));},
+  async get(c,id){
+    if(this.mode==='db'){const s=await this.db.doc(c+'/'+id).get();return s.exists?s.data():null;}
+    return (this._d[c]||{})[id]||null;
+  },
+  async list(c){
+    if(this.mode==='db'){const s=await this.db.collection(c).limit(1000).get();
+      return s.docs.map(d=>Object.assign({},d.data(),{_id:d.id}));}
+    return this._rows(c);
+  },
+  async set(c,id,data){
+    const body=Object.assign({schema:SCHEMA},data);
+    if(this.mode==='db'){await this.db.doc(c+'/'+id).set(body);return body;}
+    (this._d[c]=this._d[c]||{})[id]=body;this._save();this.ping(c);return body;
+  },
+  async patch(c,id,p){
+    if(this.mode==='db'){await this.db.doc(c+'/'+id).update(p);return;}
+    const cur=(this._d[c]=this._d[c]||{})[id];if(!cur)throw new Error('없는 문서');
+    this._d[c][id]=Object.assign({},cur,p);this._save();this.ping(c);
+  },
+  async del(c,id){
+    if(this.mode==='db'){await this.db.doc(c+'/'+id).delete();return;}
+    delete (this._d[c]||{})[id];this._save();this.ping(c);
+  },
+  watch(c,cb){
+    if(this.mode==='db'){
+      try{return this.db.collection(c).limit(1000).onSnapshot(
+        s=>cb(s.docs.map(d=>Object.assign({},d.data(),{_id:d.id}))),()=>{});}
+      catch(e){return function(){};}
+    }
+    (this._w[c]=this._w[c]||[]).push(cb); cb(this._rows(c)); return function(){};
+  },
+  ping(c){ if(this.mode!=='db') (this._w[c]||[]).forEach(cb=>cb(this._rows(c))); },
+};
+
+/* --- 상태 ------------------------------------------------------- */
+const DB={members:[],posts:[],comments:[],likes:[],greetings:[],questions:[],notices:[],reports:[],links:[]};
+const Me={
+  nick:null, row:null,
+  get state(){ if(!this.row)return 'guest';
+    if(this.row.isAdmin)return 'admin';
+    if(this.row.greetedAt)return 'full'; return 'member'; },
+  get key(){ return this.nick?nickKey(this.nick):null; },
+  get id(){ return this.nick?nickId(this.nick):null; },
+  get days(){ return this.row?daysSince(this.row.joinedDay):0; },
+  can(a){ const s=this.state;
+    if(a==='like') return s!=='guest';
+    if(a==='post'||a==='comment'||a==='question'||a==='report') return s==='full'||s==='admin';
+    if(a==='moderate') return s==='admin';
+    return false; },
+};
+const GATE={
+  guest:'이름표 하나만 달고 오세요. 누가 눌렀는지는 알아야 하니까.. 30초면 끝나요.',
+  member:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
+  notMine:'그건 쓰신 분 거예요. 거슬리면 신고 눌러주세요, 범쨩이 봅니다.',
+  guestQ:'사장님께 질문 넣으려면 이름표가 필요해요. 익명으로 물어보면 사장님이 누구한테 답하시겠어요..',
+  memberQ:'팬미팅은 인사 마친 분들만 들어올 수 있어요. 먼저 통성명부터 하시죠.',
+};
+
+
+/* --- Supabase 설정 ----------------------------------------------
+   fanclub/supabase/README.md 보고 두 줄만 채우면 공개 팬클럽이 된다.
+   비워두면 이 기기에만 저장되는 모드로 돌아간다. anon 키는 공개돼도
+   되는 키다 — 테이블이 전부 잠겨 있고 쓰기는 함수로만 나간다. ------ */
+const SUPABASE={
+  url:'https://fueovdlhzrjovihlrsdi.supabase.co',
+  anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1ZW92ZGxoenJqb3ZpaGxyc2RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODQxOTMsImV4cCI6MjEwNjc2MDE5M30.Re97g8qqbs9MjFAzPSQYiNJTJ_mXgue2NksZmszIki0',
+};
+
+const ERR={
+  NICK_TAKEN:'그 이름은 벌써 누가 찜했어요. 뒤에 숫자라도 붙여보실래요?',
+  NICK_LEN:'두 글자는 넘기고 열두 글자는 넘기지 말아주세요',
+  NICK_CHARS:'한글, 영문, 숫자랑 . _ - 만 쓸 수 있어요.',
+  NICK_BANNED:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!',
+  ADMIN_RESERVED:'범쨩은 예약된 이름이에요',
+  NO_MEMBER:'그런 이름표는 없어요',
+  NO_PIN:'이 이름표엔 아직 비번이 없어요. 처음 쓰시던 기기에서 비번부터 정해주세요.',
+  BAD_PIN:'비번이 안 맞아요',
+  PIN_EXISTS:'비번은 이미 정해져 있어요',
+  PIN_FORMAT:'숫자로만 채워주세요',
+  ADMIN_EXISTS:'범쨩은 이미 등록돼 있어요. 비번으로 들어오세요.',
+  NOT_ADMIN:'범쨩만 할 수 있어요',
+  NOT_MINE:'그건 쓰신 분 거예요. 거슬리면 신고 눌러주세요, 범쨩이 봅니다.',
+  NEED_GREET:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
+  COOLDOWN:'조금만 쉬었다 가요. 1분 뒤에 다시 쓰실 수 있어요.',
+  DAILY_LIMIT:'오늘 질문은 이미 한 장 쓰셨어요. 자정 지나면 새 걸로 드립니다.',
+  NO_SESSION:'이름표가 풀렸어요. 다시 달아주세요.',
+  BANNED:'지금은 냉탕에 계십니다.',
+  GREET_SHORT:'앞의 두 개만 채워주시면 돼요. 정말 두 줄이면 끝나요.',
+  NOT_FOUND:'이미 없는 글이에요',
+};
+/** 서버가 올린 코드를 사람 말로. 모르는 코드면 원문을 그대로 보여준다. */
+function errMsg(e){
+  const code=String(e&&e.message||e||'').trim();
+  return ERR[code]||code||'잘 안 됐어요. 한 번만 더 해주세요.';
+}
+
+/* --- Supabase 호출 ---------------------------------------------- */
+const SB={
+  async call(path,opts){
+    const r=await fetch(SUPABASE.url.replace(/\/$/,'')+path, Object.assign({
+      headers:{apikey:SUPABASE.anonKey, Authorization:'Bearer '+SUPABASE.anonKey,
+               'Content-Type':'application/json', Accept:'application/json'},
+    },opts));
+    const txt=await r.text();
+    let body=null; try{ body=txt?JSON.parse(txt):null; }catch(e){}
+    if(!r.ok){
+      /* 함수가 raise 한 코드가 message 로 올라온다 */
+      throw new Error((body&&(body.message||body.hint||body.error))||('HTTP '+r.status));
+    }
+    return body;
+  },
+  rpc(fn,args){ return this.call('/rest/v1/rpc/'+fn,{method:'POST',body:JSON.stringify(args||{})}); },
+  sel(view,qs){ return this.call('/rest/v1/'+view+'?select=*'+(qs||'')); },
+};
+
+/* --- 데이터 접근 레이어 ------------------------------------------
+   읽기는 양쪽 다 DB.* 배열을 채우고, 쓰기는 여기를 거친다.
+   Supabase 에서는 전부 서버 함수로 나가서 PIN·권한·횟수 제한이
+   브라우저가 아니라 서버에서 걸린다. ---------------------------- */
+let Api=null;
+
+const ApiSupabase={
+  mode:'supabase', token:null,
+  async init(){ try{ this.token=localStorage.getItem('udfc.token')||null; }catch(e){} return 'supabase'; },
+  _save(p){
+    this.token=p.token;
+    try{ localStorage.setItem('udfc.token',p.token); }catch(e){}
+    Me.nick=p.nick;
+    Me.row={id:p.nickKey,nick:p.nick,nickKey:p.nickKey,joinedDay:kstDay(Date.parse(p.joinedAt)),
+            greetedAt:p.greetedAt?Date.parse(p.greetedAt):null,isAdmin:!!p.isAdmin,hasPin:!!p.hasPin};
+    return Me.row;
+  },
+  async refresh(){
+    const [posts,comments,likes,greets,qs,notice,links,members]=await Promise.all([
+      SB.sel('v_posts'),SB.sel('v_comments'),SB.sel('v_likes'),SB.sel('v_greetings'),
+      SB.sel('v_questions'),SB.sel('v_notice'),SB.sel('v_links'),SB.sel('v_members')]);
+    const t=s=>s?Date.parse(s):null;
+    DB.posts=posts.map(p=>({id:p.id,nick:p.nick,nickKey:p.nick_key,body:p.body,
+      createdAt:t(p.created_at),editedAt:t(p.edited_at),pinned:p.pinned,hidden:p.hidden,
+      hiddenReason:p.hidden_reason,likeCount:+p.like_count,commentCount:+p.comment_count}));
+    DB.comments=comments.map(c=>({_id:c.id,id:c.id,postId:c.post_id,nick:c.nick,nickKey:c.nick_key,
+      body:c.body,createdAt:t(c.created_at),hidden:c.hidden}));
+    DB.likes=likes.map(l=>({_id:l.post_id+'_'+l.nick_key,postId:l.post_id,nickKey:l.nick_key}));
+    DB.greetings=greets.map(g=>({_id:g.member_id,memberId:g.member_id,nick:g.nick,nickKey:g.nick_key,
+      answers:g.answers,createdAt:t(g.created_at),editedAt:t(g.edited_at),hidden:false}));
+    DB.questions=qs.map(q=>({_id:q.id,id:q.id,nick:q.nick,nickKey:q.nick_key,day:q.day,body:q.body,
+      createdAt:t(q.created_at),answer:q.answer,answeredAt:t(q.answered_at),hidden:false}));
+    DB.notices=(notice||[]).map(n=>({_id:'notice_active',active:n.active,body:n.body}));
+    DB.links=(links||[]).map(l=>Object.assign({},l.urls));
+    DB.members=members.map(m=>({_id:m.id,id:m.id,nick:m.nick,nickKey:m.nick_key,
+      joinedDay:kstDay(Date.parse(m.joined_at)),greetedAt:t(m.greeted_at),isAdmin:m.is_admin}));
+    if(Me.nick){ const mine=DB.members.find(m=>m.nickKey===Me.key);
+      if(mine&&Me.row){ Me.row.greetedAt=mine.greetedAt; Me.row.joinedDay=mine.joinedDay; } }
+  },
+  async restore(){
+    if(!this.token) return null;
+    try{ const p=await SB.rpc('fc_login_by_token',{p_token:this.token}); return this._save(p); }
+    catch(e){ return null; }
+  },
+  join:async n=>Api._save(await SB.rpc('fc_join',{p_nick:n})),
+  login:async (n,pin)=>Api._save(await SB.rpc('fc_login',{p_nick:n,p_pin:pin})),
+  adminClaim:async pin=>Api._save(await SB.rpc('fc_admin_claim',{p_pin:pin})),
+  setPin(pin){ return SB.rpc('fc_set_pin',{p_token:this.token,p_pin:pin}).then(p=>this._save(p)); },
+  greet(a){ return SB.rpc('fc_greet',{p_token:this.token,p_answers:a}).then(p=>this._save(p)); },
+  createPost(b){ return SB.rpc('fc_create_post',{p_token:this.token,p_body:b}); },
+  editPost(id,b,pin){ return SB.rpc('fc_edit_post',{p_token:this.token,p_id:id,p_body:b,p_pin:pin}); },
+  deletePost(id,pin){ return SB.rpc('fc_delete_post',{p_token:this.token,p_id:id,p_pin:pin}); },
+  toggleLike(id){ return SB.rpc('fc_toggle_like',{p_token:this.token,p_post_id:id}); },
+  createComment(pid,b){ return SB.rpc('fc_create_comment',{p_token:this.token,p_post_id:pid,p_body:b}); },
+  deleteComment(id,pin){ return SB.rpc('fc_delete_comment',{p_token:this.token,p_id:id,p_pin:pin}); },
+  createQuestion(b){ return SB.rpc('fc_create_question',{p_token:this.token,p_body:b}); },
+  report(t,id,why){ return SB.rpc('fc_report',{p_token:this.token,p_type:t,p_target:id,p_reason:why}); },
+  hidePost(id,h,why){ return SB.rpc('fc_admin_hide_post',{p_token:this.token,p_id:id,p_hidden:h,p_reason:why}); },
+  pinPost(id,v){ return SB.rpc('fc_admin_pin_post',{p_token:this.token,p_id:id,p_pinned:v}); },
+  answerQ(id,a){ return SB.rpc('fc_admin_answer',{p_token:this.token,p_id:id,p_answer:a}); },
+  hideGreeting(mid){ return SB.rpc('fc_admin_hide_greeting',{p_token:this.token,p_member_id:mid}); },
+  setNotice(b){ return SB.rpc('fc_admin_notice',{p_token:this.token,p_body:b}); },
+  setLinks(u){ return SB.rpc('fc_admin_links',{p_token:this.token,p_urls:u}); },
+  listReports(){ return SB.rpc('fc_admin_reports',{p_token:this.token}); },
+  clearReport(id){ return SB.rpc('fc_admin_clear_report',{p_token:this.token,p_id:id}); },
+  signOut(){ this.token=null; try{localStorage.removeItem('udfc.token');}catch(e){} },
+};
+
+/* --- 문서 저장소 백엔드 (아티팩트 DB / 이 기기) -------------------
+   Supabase 설정이 비어 있을 때 쓴다. 서버가 없으니 PIN 검증도
+   브라우저에서 한다 — 매너 장치지 보안이 아니다. ----------------- */
+const ApiDoc={
+  mode:'local', token:null,
+  async init(){ this.mode=await Store.init(); return this.mode; },
+  _row(id,row){ Me.nick=row.nick;
+    Me.row=Object.assign({_id:id},row,{hasPin:!!row.pinHash}); return Me.row; },
+  async refresh(){ /* watch 가 알아서 채운다 */ },
+  async restore(){
+    let saved=null; try{ saved=localStorage.getItem(LS.nick); }catch(e){}
+    if(!saved) return null;
+    const id='m_'+nickId(saved), row=await Store.get('members',id);
+    if(!row){ try{localStorage.removeItem(LS.nick);}catch(e){} return null; }
+    return this._row(id,row);
+  },
+  async join(nick){
+    const id='m_'+nickId(nick);
+    if(await Store.get('members',id)) throw new Error('NICK_TAKEN');
+    const now=Date.now();
+    const row=await Store.set('members',id,{nick,nickKey:nickKey(nick),joinedAt:now,joinedDay:kstDay(now),
+      pinHash:null,greetedAt:null,isAdmin:false,lastQuestionDay:null,postCount:0,updatedAt:now});
+    try{ localStorage.setItem(LS.nick,nick); }catch(e){}
+    return this._row(id,row);
+  },
+  async login(nick,pin){
+    const id='m_'+nickId(nick), row=await Store.get('members',id);
+    if(!row) throw new Error('NO_MEMBER');
+    if(!row.pinHash) throw new Error('NO_PIN');
+    if(!await samePin(pin,nick,row.pinHash)) throw new Error('BAD_PIN');
+    try{ localStorage.setItem(LS.nick,nick); }catch(e){}
+    return this._row(id,row);
+  },
+  async adminClaim(pin){
+    const id='m_'+nickId(ADMIN_NICK);
+    if(await Store.get('members',id)) throw new Error('ADMIN_EXISTS');
+    const now=Date.now();
+    const row=await Store.set('members',id,{nick:ADMIN_NICK,nickKey:nickKey(ADMIN_NICK),joinedAt:now,
+      joinedDay:kstDay(now),pinHash:null,adminHash:await hashPin(pin,ADMIN_NICK),greetedAt:now,
+      isAdmin:true,lastQuestionDay:null,postCount:0,updatedAt:now});
+    try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
+    return this._row(id,row);
+  },
+  async adminLogin(pin){
+    const id='m_'+nickId(ADMIN_NICK), row=await Store.get('members',id);
+    if(!row) throw new Error('NO_MEMBER');
+    if(!await samePin(pin,ADMIN_NICK,row.adminHash)) throw new Error('BAD_PIN');
+    try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
+    return this._row(id,row);
+  },
+  async setPin(pin){
+    const h=await hashPin(pin,Me.nick);
+    await Store.patch('members',Me.row._id,{pinHash:h,updatedAt:Date.now()});
+    Me.row.pinHash=h; Me.row.hasPin=true; return Me.row;
+  },
+  async checkPin(pin){
+    if(!Me.row.pinHash) throw new Error('NO_PIN');
+    if(!await samePin(pin,Me.nick,Me.row.pinHash)) throw new Error('BAD_PIN');
+  },
+  async greet(answers){
+    const mine=DB.greetings.find(g=>g.nickKey===Me.key), now=Date.now();
+    await Store.set('greetings','g_'+Me.id,{nick:Me.nick,nickKey:Me.key,answers,
+      createdAt:mine?mine.createdAt:now,editedAt:mine?now:null,hidden:false});
+    if(!Me.row.greetedAt){ await Store.patch('members',Me.row._id,{greetedAt:now,updatedAt:now});
+      Me.row.greetedAt=now; }
+    return Me.row;
+  },
+  async createPost(body){
+    if(!Me.row.greetedAt) throw new Error('NEED_GREET');
+    const last=DB.posts.filter(p=>p.nickKey===Me.key).sort((a,b)=>b.createdAt-a.createdAt)[0];
+    if(last&&!Me.row.isAdmin&&Date.now()-last.createdAt<POST_COOLDOWN) throw new Error('COOLDOWN');
+    const now=Date.now(), id='p_'+now+'_'+Math.random().toString(36).slice(2,8);
+    await Store.set('posts',id,{id,nick:Me.nick,nickKey:Me.key,body,createdAt:now,editedAt:null,
+      likeCount:0,commentCount:0,pinned:false,hidden:false,hiddenReason:null,reportCount:0});
+    return id;
+  },
+  async editPost(id,body,pin){ await this.checkPin(pin);
+    await Store.patch('posts',id,{body,editedAt:Date.now()}); },
+  async deletePost(id,pin){
+    const p=DB.posts.find(x=>x.id===id); if(!p) throw new Error('NOT_FOUND');
+    if(p.nickKey===Me.key) await this.checkPin(pin);
+    else if(!Me.row.isAdmin) throw new Error('NOT_MINE');
+    for(const c of DB.comments.filter(c=>c.postId===id)) await Store.del('comments',c._id);
+    for(const l of DB.likes.filter(l=>l.postId===id)) await Store.del('likes',l._id);
+    await Store.del('posts',id);
+  },
+  async toggleLike(postId){
+    const id='like_'+postId+'_'+Me.id, had=DB.likes.some(l=>l._id===id);
+    if(had) await Store.del('likes',id);
+    else await Store.set('likes',id,{postId,nickKey:Me.key,createdAt:Date.now()});
+    let n=DB.likes.filter(l=>l.postId===postId).length; n+= had?(DB.likes.some(l=>l._id===id)?-1:0):(DB.likes.some(l=>l._id===id)?0:1);
+    await Store.patch('posts',postId,{likeCount:Math.max(0,n)}).catch(()=>{});
+    return {liked:!had,count:Math.max(0,n)};
+  },
+  async createComment(postId,body){
+    if(!Me.row.greetedAt) throw new Error('NEED_GREET');
+    const now=Date.now();
+    await Store.set('comments','c_'+postId+'_'+now+'_'+Math.random().toString(36).slice(2,6),
+      {postId,nick:Me.nick,nickKey:Me.key,body,createdAt:now,hidden:false,reportCount:0});
+    await Store.patch('posts',postId,{commentCount:DB.comments.filter(x=>x.postId===postId).length+1}).catch(()=>{});
+  },
+  async deleteComment(id,pin){
+    const c=DB.comments.find(x=>x._id===id); if(!c) throw new Error('NOT_FOUND');
+    if(c.nickKey===Me.key) await this.checkPin(pin);
+    else if(!Me.row.isAdmin) throw new Error('NOT_MINE');
+    await Store.del('comments',id);
+    await Store.patch('posts',c.postId,{commentCount:DB.comments.filter(x=>x.postId===c.postId).length-1}).catch(()=>{});
+  },
+  async createQuestion(body){
+    if(!Me.row.greetedAt) throw new Error('NEED_GREET');
+    const day=kstDay();
+    if(DB.questions.some(q=>q.nickKey===Me.key&&q.day===day)) throw new Error('DAILY_LIMIT');
+    const id='q_'+day+'_'+Me.id;
+    await Store.set('questions',id,{id,nick:Me.nick,nickKey:Me.key,day,body,createdAt:Date.now(),
+      answer:null,answeredAt:null,answeredBy:null,hidden:false});
+    await Store.patch('members',Me.row._id,{lastQuestionDay:day}).catch(()=>{});
+    return id;
+  },
+  async report(type,id,reason){
+    await Store.set('reports','r_'+id+'_'+Me.id,{targetType:type,targetId:id,nickKey:Me.key,
+      nick:Me.nick,reason:reason||'기타',createdAt:Date.now()});
+    const p=DB.posts.find(x=>x.id===id);
+    if(p) await Store.patch('posts',id,{reportCount:(p.reportCount||0)+1}).catch(()=>{});
+  },
+  hidePost(id,hidden,reason){ return Store.patch('posts',id,
+    hidden?{hidden:true,hiddenReason:reason||'규칙 위반'}:{hidden:false,hiddenReason:null}); },
+  pinPost(id,pinned){ return Store.patch('posts',id,{pinned}); },
+  answerQ(id,a){ return Store.patch('questions',id,
+    a?{answer:a,answeredAt:Date.now(),answeredBy:Me.key}:{answer:null,answeredAt:null,answeredBy:null}); },
+  async hideGreeting(memberId){
+    const g=DB.greetings.find(x=>x._id===memberId||x.memberId===memberId); if(!g) return;
+    await Store.patch('greetings',g._id,{hidden:true});
+    const m=DB.members.find(x=>x.nickKey===g.nickKey);
+    if(m) await Store.patch('members',m._id,{greetedAt:null});
+  },
+  setNotice(b){ return Store.set('notices','notice_active',{active:!!b,body:b,updatedAt:Date.now(),updatedBy:Me.key}); },
+  setLinks(u){ return Store.set('links','links_site',Object.assign({},u,{updatedAt:Date.now()})); },
+  async listReports(){ return DB.reports.map(r=>({id:r._id,targetType:r.targetType,targetId:r.targetId,
+    reason:r.reason,createdAt:r.createdAt,nick:r.nick||r.nickKey})); },
+  clearReport(id){ return Store.del('reports',id); },
+  signOut(){ try{ localStorage.removeItem(LS.nick); }catch(e){} },
+};
+
+/* --- 아트워크 : 스킨별 두 벌을 같이 넣고 CSS로 하나만 보인다 ---- */
+const ART={
+  spark_b:`<svg viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="신난 계란후라이"><g fill="var(--line)"><rect x="4" y="1" width="6" height="1"/><rect x="2" y="2" width="2" height="1"/><rect x="10" y="2" width="2" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="14" y="7" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="6" y="8" width="2" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="13" y="9" width="1" height="1"/><rect x="1" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="3" y="13" width="2" height="1"/><rect x="9" y="13" width="2" height="1"/><rect x="5" y="14" width="4" height="1"/></g><g fill="var(--egg-w)"><rect x="4" y="2" width="6" height="1"/><rect x="2" y="3" width="10" height="1"/><rect x="1" y="4" width="12" height="1"/><rect x="1" y="5" width="4" height="1"/><rect x="9" y="5" width="4" height="1"/><rect x="1" y="6" width="3" height="1"/><rect x="10" y="6" width="4" height="1"/><rect x="1" y="7" width="3" height="1"/><rect x="10" y="7" width="4" height="1"/><rect x="1" y="8" width="3" height="1"/><rect x="10" y="8" width="4" height="1"/><rect x="1" y="9" width="4" height="1"/><rect x="9" y="9" width="4" height="1"/><rect x="2" y="10" width="11" height="1"/><rect x="2" y="11" width="10" height="1"/><rect x="3" y="12" width="8" height="1"/><rect x="5" y="13" width="4" height="1"/></g><g fill="var(--yolk)"><rect x="1" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="15" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="5" y="5" width="4" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="6" y="6" width="2" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="4" y="7" width="6" height="1"/><rect x="4" y="8" width="2" height="1"/><rect x="8" y="8" width="2" height="1"/><rect x="5" y="9" width="4" height="1"/></g></svg>`,
+  sleep_b:`<svg viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="졸고 있는 계란후라이"><g fill="var(--line)"><rect x="12" y="0" width="3" height="1"/><rect x="4" y="1" width="6" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="2" y="2" width="2" height="1"/><rect x="10" y="2" width="5" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="4" y="6" width="2" height="1"/><rect x="8" y="6" width="2" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="14" y="7" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="13" y="9" width="1" height="1"/><rect x="1" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="3" y="13" width="2" height="1"/><rect x="9" y="13" width="2" height="1"/><rect x="5" y="14" width="4" height="1"/></g><g fill="var(--egg-w)"><rect x="4" y="2" width="6" height="1"/><rect x="2" y="3" width="10" height="1"/><rect x="1" y="4" width="12" height="1"/><rect x="1" y="5" width="4" height="1"/><rect x="9" y="5" width="4" height="1"/><rect x="1" y="6" width="3" height="1"/><rect x="10" y="6" width="4" height="1"/><rect x="1" y="7" width="3" height="1"/><rect x="10" y="7" width="4" height="1"/><rect x="1" y="8" width="3" height="1"/><rect x="10" y="8" width="4" height="1"/><rect x="1" y="9" width="4" height="1"/><rect x="9" y="9" width="4" height="1"/><rect x="2" y="10" width="11" height="1"/><rect x="2" y="11" width="10" height="1"/><rect x="3" y="12" width="8" height="1"/><rect x="5" y="13" width="4" height="1"/></g><g fill="var(--yolk)"><rect x="5" y="5" width="4" height="1"/><rect x="6" y="6" width="2" height="1"/><rect x="4" y="7" width="6" height="1"/><rect x="4" y="8" width="3" height="1"/><rect x="8" y="8" width="2" height="1"/><rect x="5" y="9" width="4" height="1"/></g></svg>`,
+  blank_b:`<svg viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="멍때리는 계란후라이"><g fill="var(--line)"><rect x="13" y="0" width="1" height="1"/><rect x="15" y="0" width="1" height="1"/><rect x="4" y="1" width="6" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="2" y="2" width="2" height="1"/><rect x="10" y="2" width="2" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="14" y="7" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="13" y="9" width="1" height="1"/><rect x="1" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="3" y="13" width="2" height="1"/><rect x="9" y="13" width="2" height="1"/><rect x="5" y="14" width="4" height="1"/></g><g fill="var(--egg-w)"><rect x="4" y="2" width="6" height="1"/><rect x="2" y="3" width="10" height="1"/><rect x="1" y="4" width="12" height="1"/><rect x="1" y="5" width="4" height="1"/><rect x="9" y="5" width="4" height="1"/><rect x="1" y="6" width="3" height="1"/><rect x="10" y="6" width="4" height="1"/><rect x="1" y="7" width="3" height="1"/><rect x="10" y="7" width="4" height="1"/><rect x="1" y="8" width="3" height="1"/><rect x="10" y="8" width="4" height="1"/><rect x="1" y="9" width="4" height="1"/><rect x="9" y="9" width="4" height="1"/><rect x="2" y="10" width="11" height="1"/><rect x="2" y="11" width="10" height="1"/><rect x="3" y="12" width="8" height="1"/><rect x="5" y="13" width="4" height="1"/></g><g fill="var(--yolk)"><rect x="5" y="5" width="4" height="1"/><rect x="5" y="6" width="4" height="1"/><rect x="4" y="7" width="6" height="1"/><rect x="4" y="8" width="3" height="1"/><rect x="8" y="8" width="2" height="1"/><rect x="5" y="9" width="4" height="1"/></g></svg>`,
+  steam_b:`<svg viewBox="0 0 8 16" shape-rendering="crispEdges" aria-hidden="true"><g fill="var(--line)"><rect x="2" y="0" width="2" height="1"/><rect x="1" y="1" width="2" height="2"/><rect x="2" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="2"/><rect x="2" y="6" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/><rect x="2" y="9" width="2" height="1"/><rect x="3" y="10" width="2" height="2"/><rect x="2" y="12" width="2" height="1"/><rect x="1" y="13" width="2" height="2"/><rect x="2" y="15" width="2" height="1"/></g></svg>`,
+};
+const egg=k=>ART[k+'_b'];
+
+/* --- 카피 ------------------------------------------------------- */
+const RULES=[
+  ['때는 밀어도 마음은 밀지 말기','욕설, 비꼬기, 저격 금지. 여긴 열탕이지 싸움판이 아니에요.'],
+  ['얼굴 보고 못 할 말은 여기서도 금지','딱 하나 예외는 사이버 고백. 여기에선 용기내어 마음껏 고백하세요.'],
+  ['신상은 사물함에 넣고 잠그기','사장님이든 직원분이든 옆자리 손님이든, 실명·연락처·주소·얼굴 사진은 안 돼요. 들어오실 때 두고 오시면 됩니다.'],
+  ['불편할 질문은 접어두기','궁금한 건 팬미팅에서 마음껏 여쭤보세요. 다만 사장님이 듣고 곤란하실 것 같으면 그건 선 넘은 온도예요.'],
+  ['홍보는 다른 탕에서','장사, 링크 뿌리기, 맞팔 품앗이 금지. 여긴 사장님 주접만 취급합니다.'],
+  ['실제 금샘탕에선 조용한 사우너로','온라인에서 아무리 뜨거워도 매장에선 인사 한 번이면 충분해요. 사진은 찍기 전에 꼭 여쭤보고, 탈의 구역은 무조건 금지.'],
+  ['주접은 진하게, 도배는 얇게','같은 글 반복, 연속 업로드 금지. 사우나도 쉬어가면서 해야 오래 갑니다.'],
+  ['이상하면 신고, 판단은 범쨩이','신고 버튼 한 번이면 범쨩이 보고 숨기거나 지웁니다. 직접 싸우지 말고 그냥 누르세요.'],
+];
+const GREET_Q=[
+  {k:'q1',label:'사장님한테 처음 반한 순간은 언제예요?',hint:'입덕 계기. 거창할 필요 없어요.',req:true,
+   ph:'수건 건네주시는 손이 따뜻해서요. 그날로 끝났습니다.'},
+  {k:'q2',label:'사장님의 어디가 제일 좋아요?',hint:'최애 포인트 하나만.',req:true,
+   ph:'탕 온도 물어보면 1도 단위로 알려주시는 그 프로 정신..'},
+  {k:'q3',label:'여기서 뭘 하고 싶으세요?',hint:'활동 포부. 비워두셔도 됩니다.',req:false,
+   ph:'매일 출석해서 주접 한 줄씩. 100일 채우는 게 목표예요'},
+  {k:'q4',label:'탕 취향이 어떻게 되세요?',hint:'같은 취향 찾으면 반가우니까요.',req:false,
+   ph:'열탕 3분 냉탕 1분 무한반복파. 건식은 90도부터 인정합니다'},
+];
+/* 실제 주소는 확인이 안 돼서 비워둔다. 범쨩이 페이지에서 직접 채운다.
+   주소가 빈 카드는 렌더에서 빠진다 — 죽은 링크가 제일 없어 보인다. */
+const LINKS=[
+  {key:'marpple',platform:'마플샵 스토어',icon:'shop',url:'https://marpple.shop/kr/geumsaemtang',
+   desc:'금샘탕 키링이랑 입장료 할인되는 티셔츠 구경하기'},
+  {key:'instagram',platform:'인스타그램',icon:'ig',url:'https://www.instagram.com/geumsaemtang',
+   desc:'휴무랑 이벤트 소식은 여기가 제일 빨라요'},
+  {key:'blog',platform:'블로그',icon:'blog',url:'https://m.blog.naver.com/miontang',
+   desc:'사장님이 직접 쓰는 긴 이야기. 후기랑 공지는 여기 쌓여요'},
+  {key:'youtube',platform:'유튜브',icon:'yt',url:'https://youtube.com/@geumsaemtang',
+   desc:'움직이는 금샘탕을 볼 수 있는 유일한 곳'},
+  {key:'book',platform:'집앞목욕탕 금샘탕편',icon:'book',url:'https://m.yes24.com/goods/detail/128861165',
+   desc:'금샘탕이 책에 실렸어요. 한 권 통째로 목욕탕 이야기'},
+];
+const ICON={
+  ig:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--ink)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="var(--ink)"/></svg>',
+  blog:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
+  yt:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--ink)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9.5l5 2.5-5 2.5z" fill="var(--ink)"/></svg>',
+  shop:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>',
+  book:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M4 20.5A2.5 2.5 0 016.5 18H20v3H6.5A2.5 2.5 0 014 20.5z"/></svg>',
+};
+
+/* --- 토스트 / 확인 / PIN 모달 ----------------------------------- */
+function toast(msg,kind){
+  const host=$('#toastHost'); const t=el('div','toast'+(kind?' toast--'+kind:''),msg);
+  host.appendChild(t); setTimeout(()=>{t.remove();},4200);
+}
+function confirmBox(title,msg,yes,no){
+  return new Promise(res=>{
+    const d=$('#dlgConfirm');
+    $('#cfTitle').textContent=title; $('#cfMsg').textContent=msg;
+    $('#cfYes').textContent=yes||'네'; $('#cfNo').textContent=no||'아니요';
+    d.onclose=()=>res(d.returnValue==='ok'); d.showModal();
+  });
+}
+/** 숫자 n칸 입력. 자동으로 다음 칸 이동, 붙여넣기/백스페이스 처리. */
+function pinBox(n,{title,desc,warn,okLabel}){
+  return new Promise(res=>{
+    const d=$('#dlgPin'), box=$('#pinBoxes');
+    $('#pinTitle').textContent=title; $('#pinDesc').textContent=desc||'';
+    $('#pinWarn').textContent=warn||''; $('#pinErr').textContent='';
+    $('#pinOk').textContent=okLabel||'확인';
+    box.innerHTML='';
+    for(let i=0;i<n;i++){
+      const inp=document.createElement('input');
+      inp.type='password'; inp.inputMode='numeric'; inp.maxLength=1;
+      inp.autocomplete='off'; inp.id='pin'+i; inp.setAttribute('aria-label',(i+1)+'번째 자리');
+      box.appendChild(inp);
+    }
+    const ins=[...box.children];
+    ins.forEach((inp,i)=>{
+      inp.addEventListener('input',()=>{
+        inp.value=inp.value.replace(/\D/g,'').slice(0,1);
+        if(inp.value&&i<n-1) ins[i+1].focus();
+      });
+      inp.addEventListener('keydown',e=>{
+        if(e.key==='Backspace'&&!inp.value&&i>0){ins[i-1].focus();ins[i-1].value='';e.preventDefault();}
+      });
+      inp.addEventListener('paste',e=>{
+        const t=(e.clipboardData.getData('text')||'').replace(/\D/g,'');
+        if(!t)return; e.preventDefault();
+        for(let j=0;j<n-i&&j<t.length;j++) ins[i+j].value=t[j];
+        ins[Math.min(n-1,i+t.length)].focus();
+      });
+    });
+    d.onclose=()=>res(d.returnValue==='ok'?ins.map(x=>x.value).join(''):null);
+    d.showModal(); setTimeout(()=>ins[0].focus(),60);
+  });
+}
+const pinShake=m=>{const b=$('#pinBoxes');$('#pinErr').textContent=m;
+  b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');};
+
+/* --- 인기글 랭킹 ------------------------------------------------
+   score = (공감*3 + 댓글*2) * 0.5^(경과h/84)
+   84시간 반감기 = 3.5일. 최근 14일, 3점 이상, 상위 5개.
+   고정글은 랭킹에서 빼고 최근 주접 맨 위에 따로 붙인다. -------- */
+const HOT_HL=84, HOT_WIN=14*86400000, HOT_MIN=3, HOT_MAX=5;
+const score=p=>((p.likeCount||0)*3+(p.commentCount||0)*2)*Math.pow(0.5,((Date.now()-p.createdAt)/3600000)/HOT_HL);
+const pickHot=ps=>ps.filter(p=>!p.hidden&&!p.pinned&&Date.now()-p.createdAt<HOT_WIN)
+  .map(p=>({p,s:score(p)})).filter(x=>x.s>=HOT_MIN).sort((a,b)=>b.s-a.s).slice(0,HOT_MAX).map(x=>x.p);
+
+/* --- 렌더 : 글 카드 --------------------------------------------- */
+let shown=PAGE;
+function postCard(p,{hot}={}){
+  const mine=Me.key&&p.nickKey===Me.key, mod=Me.can('moderate');
+  const liked=DB.likes.some(l=>l.postId===p.id&&l.nickKey===Me.key);
+  const likeN=DB.likes.filter(l=>l.postId===p.id).length;
+  const cmtN=DB.comments.filter(c=>c.postId===p.id&&!c.hidden).length;
+  const w=el('div','card-wrap'); const c=el('div','card post');
+  if(p.hidden) c.classList.add('post--hidden');
+  const canSee=!p.hidden||mine||mod;
+  c.innerHTML=
+    `<div class="who">
+       <span class="nick">${esc(p.nick)}</span>
+       ${p.pinned?'<span class="badge badge--pin">고정</span>':''}
+       ${hot?'<span class="badge badge--hot">인기</span>':''}
+       ${p.hidden?'<span class="badge badge--wait">숨김</span>':''}
+       <span class="t-meta">${esc(ago(p.createdAt))}${p.editedAt?' · 수정됨':''}</span>
+     </div>
+     <div class="body">${canSee?esc(p.body):'온도 조절 중인 글이에요.'}</div>`;
+  if(p.hidden&&canSee&&p.hiddenReason)
+    c.insertAdjacentHTML('beforeend',`<p class="t-meta">범쨩 메모: ${esc(p.hiddenReason)}</p>`);
+  const foot=el('div','foot');
+  const like=el('button','like'); like.type='button';
+  like.setAttribute('aria-pressed',liked?'true':'false');
+  like.setAttribute('aria-label','공감 '+likeN+'개');
+  like.innerHTML=`<span class="puff" aria-hidden="true">${ART.steam_b}</span>`
+    +egg('spark')+`<span class="n">${likeN}</span>`;
+  like.querySelectorAll('svg').forEach(s=>{if(!s.closest('.puff')){s.setAttribute('width','22');s.setAttribute('height','19');}});
+  like.addEventListener('click',()=>toggleLike(p,like));
+  foot.appendChild(like);
+  const cm=el('button','btn btn--sm btn--ghost','댓글 '+cmtN); cm.type='button';
+  cm.addEventListener('click',()=>openDetail(p.id)); foot.appendChild(cm);
+  if(mine){
+    const e=el('button','btn btn--sm','고치기');e.type='button';
+    e.addEventListener('click',()=>editPost(p));foot.appendChild(e);
+    const d=el('button','btn btn--sm btn--danger','지우기');d.type='button';
+    d.addEventListener('click',()=>removePost(p));foot.appendChild(d);
+  }else if(Me.can('report')){
+    const r=el('button','btn btn--sm btn--ghost','신고');r.type='button';
+    r.addEventListener('click',()=>report('post',p.id));foot.appendChild(r);
+  }
+  if(mod){
+    const pin=el('button','btn btn--sm',p.pinned?'고정 풀기':'고정');pin.type='button';
+    pin.addEventListener('click',async()=>{
+      try{ await Api.pinPost(p.id,!p.pinned); toast(p.pinned?'고정 풀었어요':'맨 위로 올렸습니다'); await reload(); }
+      catch(e){ toast(errMsg(e),'bad'); }});
+    foot.appendChild(pin);
+    const h=el('button','btn btn--sm',p.hidden?'다시 보이기':'숨기기');h.type='button';
+    h.addEventListener('click',()=>hidePost(p));foot.appendChild(h);
+  }
+  c.appendChild(foot); w.appendChild(c); return w;
+}
+function emptyBox(msg,btnLabel,onClick,kind){
+  const b=el('div','empty'); b.innerHTML=egg(kind||'blank');
+  b.querySelectorAll('svg').forEach(s=>{s.setAttribute('width','56');s.setAttribute('height','48');});
+  const p=el('p'); p.innerHTML=msg; b.appendChild(p);
+  if(btnLabel){const x=el('button','btn btn--primary',btnLabel);x.type='button';
+    x.addEventListener('click',onClick);b.appendChild(x);}
+  return b;
+}
+
+/* --- 렌더 : 섹션들 ---------------------------------------------- */
+function renderPosts(){
+  const vis=DB.posts.filter(p=>!p.hidden||Me.can('moderate')||p.nickKey===Me.key);
+  const hot=pickHot(DB.posts);
+  const hs=$('#hot'); hs.hidden=hot.length===0;
+  const hl=$('#hotList'); hl.innerHTML='';
+  hot.forEach(p=>hl.appendChild(postCard(p,{hot:true})));
+
+  const sorted=vis.slice().sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||b.createdAt-a.createdAt);
+  const rl=$('#recentList'); rl.innerHTML='';
+  if(!sorted.length){
+    rl.appendChild(emptyBox('아직 아무도 주접을 안 떨었어요.<br>첫 번째가 되실래요? 부담 갖지 마시고요.','주접 쓰기',openPost));
+  }else sorted.slice(0,shown).forEach(p=>rl.appendChild(postCard(p)));
+  $('#moreRow').hidden=sorted.length<=shown;
+}
+function renderGreetings(){
+  const box=$('#greetList'); box.innerHTML='';
+  const gs=DB.greetings.filter(g=>!g.hidden).sort((a,b)=>b.createdAt-a.createdAt).slice(0,12);
+  if(!gs.length){
+    box.style.display='block';
+    box.appendChild(emptyBox('첫 손님을 기다리는 중.<br>여기 인사 남기시면 이 페이지 1호 회원이에요.','','','sleep'));
+    return;
+  }
+  box.style.display='';
+  gs.forEach(g=>{
+    const w=el('div','card-wrap'), c=el('div','card greet');
+    const m=DB.members.find(x=>x.nickKey===g.nickKey);
+    c.innerHTML=`<div class="who"><span class="nick">${esc(g.nick)}</span>`+
+      (m?`<span class="badge">${daysSince(m.joinedDay)}일째</span>`:'')+
+      `<span class="t-meta">${esc(ago(g.createdAt))}</span></div><dl style="margin:0">`+
+      GREET_Q.filter(q=>g.answers&&g.answers[q.k]).map(q=>
+        `<dt>${esc(q.label)}</dt><dd>${esc(g.answers[q.k])}</dd>`).join('')+`</dl>`;
+    if(Me.can('moderate')){
+      const h=el('button','btn btn--sm btn--danger','숨기기');h.type='button';
+      h.style.marginTop='var(--s3)';
+      h.addEventListener('click',async()=>{
+        if(await confirmBox('인사 숨기기','인사를 지우면 이분 정회원 자격도 같이 풀려요.','알겠습니다','취소')){
+          try{ await Api.hideGreeting(g.memberId!=null?g.memberId:g._id); toast('인사를 내렸습니다'); await reload(); }
+          catch(e){ toast(errMsg(e),'bad'); }
+        }
+      });
+      c.appendChild(h);
+    }
+    w.appendChild(c); box.appendChild(w);
+  });
+}
+function renderQuestions(){
+  const box=$('#qList'); box.innerHTML='';
+  const qs=DB.questions.filter(q=>!q.hidden)
+    .sort((a,b)=>(b.answer?1:0)-(a.answer?1:0)||b.createdAt-a.createdAt);
+  if(!qs.length){box.appendChild(emptyBox('아직 아무도 안 여쭤봤어요.<br>첫 질문의 영광을 가져가시죠.'));return;}
+  qs.forEach(q=>{
+    const w=el('div','card-wrap'), c=el('div','card');
+    c.innerHTML=`<div class="who"><span class="nick">${esc(q.nick)}</span>`+
+      (q.answer?'<span class="badge badge--done">사장님 답변 도착!</span>'
+               :'<span class="badge badge--wait">기다리는 중</span>')+
+      `<span class="t-meta">${esc(q.day.replace(/-/g,'.'))}</span></div>
+       <div class="body">${esc(q.body)}</div>`;
+    if(q.answer) c.insertAdjacentHTML('beforeend',
+      `<div class="qa"><p class="t-meta">사장님 답변</p><div class="body">${esc(q.answer)}</div></div>`);
+    if(Me.can('moderate')){
+      const a=el('button','btn btn--sm',q.answer?'답변 고치기':'답변 옮겨 적기');a.type='button';
+      a.style.marginTop='var(--s3)';
+      a.addEventListener('click',()=>answerQ(q));
+      c.appendChild(a);
+    }
+    w.appendChild(c); box.appendChild(w);
+  });
+  refreshQGate();
+}
+function renderLinks(){
+  const box=$('#linkList'); box.innerHTML='';
+  const saved=DB.links[0]||{};
+  const live=LINKS.filter(l=>saved[l.key]||l.url);
+  $('#linkAdminRow').hidden=!Me.can('moderate');
+  if(!live.length){
+    box.appendChild(emptyBox(Me.can('moderate')
+      ? '아직 주소가 하나도 없어요.<br>아래 버튼으로 채우시면 카드가 생깁니다.'
+      : '사장님 링크는 정리되는 대로 여기 올라와요.'));
+    return;
+  }
+  live.forEach(l=>{
+    const w=el('div','card-wrap');
+    const a=document.createElement('a');
+    a.className='card link-card'; a.href=saved[l.key]||l.url;
+    a.target='_blank'; a.rel='noopener noreferrer';
+    a.innerHTML=`<span class="ico">${ICON[l.icon]}</span>
+      <span><span class="pf">${esc(l.platform)}</span><br><span class="ds">${esc(l.desc)}</span></span>
+      <span class="ar" aria-hidden="true">&#8599;</span>`;
+    w.appendChild(a); box.appendChild(w);
+  });
+}
+function renderNotice(){
+  const slot=$('#noticeSlot'); slot.innerHTML='';
+  const n=DB.notices.find(x=>x._id==='notice_active'&&x.active&&x.body);
+  if(!n) return;
+  const d=el('div','notice');
+  d.innerHTML=`<strong>공지</strong><span>${esc(n.body)}</span>`;
+  slot.appendChild(d);
+}
+function renderStats(){
+  const dl=$('#statList'); dl.innerHTML='';
+  const rows=[
+    ['입덕한 사람', DB.members.length+'명'],
+    ['쌓인 주접', DB.posts.filter(p=>!p.hidden).length+'개'],
+    ['오간 공감', DB.likes.length+'번'],
+    ['사장님께 간 질문', DB.questions.length+'개'],
+  ];
+  rows.forEach(([k,v])=>{
+    const r=el('div','row'); r.style.justifyContent='space-between';
+    r.appendChild(el('dt','t-meta',k)); r.appendChild(el('dd','t-ui',v));
+    r.querySelector('dd').style.margin='0';
+    dl.appendChild(r);
+  });
+}
+function renderMe(){
+  const chip=$('#dayChip'), btn=$('#meBtn');
+  if(Me.row){
+    chip.hidden=false; $('#dayNum').textContent=String(Me.days).padStart(2,'0');
+    btn.textContent=Me.nick+(Me.state==='admin'?' (범쨩)':'');
+  }else{ chip.hidden=true; btn.textContent='이름표 달기'; }
+  $('#adminCard').hidden=!Me.can('moderate');
+}
+function renderAll(){ renderNotice();renderPosts();renderGreetings();renderQuestions();
+  renderLinks();renderStats();renderMe(); }
+
+/* --- 신원 확보 --------------------------------------------------- */
+async function needNick(){
+  if(Me.row) return true;
+  toast(GATE.guest); return await openNick();
+}
+async function needFull(gateMsg){
+  if(!await needNick()) return false;
+  if(Me.can('post')) return true;
+  toast(gateMsg||GATE.member);
+  return await openGreet();
+}
+/** PIN 을 받아서 돌려준다. 맞는지는 백엔드가 본다 (Supabase 에서는 서버에서). */
+async function askPin(){
+  if(!Me.row) return null;
+  if(!Me.row.hasPin){
+    const a=await pinBox(4,{title:'비밀번호 정하기',
+      desc:'쓰신 글이랑 댓글을 나중에 고치거나 지울 때, 그리고 다른 기기에서 돌아올 때 쓰는 번호예요. 숫자 4자리.',
+      warn:'복구가 안 되니 꼭 기억해두세요.',okLabel:'저장'});
+    if(!a||a.length<4) return null;
+    try{ await Api.setPin(a); toast('비번 저장 완료. 잊지 마세요, 복구가 안 돼요.','good'); return a; }
+    catch(e){ toast(errMsg(e),'bad'); return null; }
+  }
+  const lk=lockGet('pin');
+  if(lk.until>Date.now()){ toast('3번 틀리셨으니 잠깐 냉탕 다녀오시죠. 5분 뒤에 다시.','bad'); return null; }
+  const a=await pinBox(4,{title:'비밀번호 확인',desc:'본인 확인용이에요. 정하셨던 4자리를 넣어주세요.'});
+  return (a&&a.length===4)?a:null;
+}
+/** PIN 이 필요한 동작을 감싼다. 틀리면 다시 묻고, 세 번이면 잠근다. */
+async function withPin(run){
+  for(;;){
+    const pin=await askPin(); if(!pin) return false;
+    try{ await run(pin); lockClear('pin'); return true; }
+    catch(e){
+      if(String(e&&e.message)!=='BAD_PIN'){ toast(errMsg(e),'bad'); return false; }
+      const l=lockHit('pin',TRIES,PIN_LOCK);
+      if(l.until>Date.now()){ toast('3번 틀리셨으니 잠깐 냉탕 다녀오시죠. 5분 뒤에 다시.','bad'); return false; }
+      toast('비번이 안 맞아요. 남은 시도 '+(TRIES-l.tries)+'번.','bad');
+    }
+  }
+}
+/** Supabase 는 폴링이라 쓰기 직후 한 번 당겨온다. 문서 저장소는 watch 가 한다. */
+async function reload(){ if(Api.mode==='supabase'){ try{ await Api.refresh(); renderAll(); }catch(e){} } }
+
+/* --- 이름표 달기 ------------------------------------------------- */
+function openNick(){
+  return new Promise(res=>{
+    const d=$('#dlgNick'), inp=$('#nickIn'), err=$('#nickErr');
+    inp.value=''; err.textContent='';
+    d.onclose=async()=>{
+      if(d.returnValue!=='ok') return res(false);
+      const v=checkNick(inp.value);
+      if(v.err){ err.textContent=v.err; toast(v.err,'bad'); setTimeout(()=>d.showModal(),0); return; }
+      if(v.admin){ return res(await adminGate()); }
+      try{ await Api.join(v.nick); }
+      catch(ex){ toast(errMsg(ex),'bad'); setTimeout(()=>d.showModal(),0); return; }
+      toast('입덕을 환영합니다. 오늘부터 01일째!','good'); await reload(); renderAll();
+      res(true);
+    };
+    d.showModal(); setTimeout(()=>inp.focus(),60);
+  });
+}
+/** 범쨩은 예약어다. 처음이면 8자리를 정하고, 그 다음부터는 그 번호로 들어온다.
+    비번을 코드에 두지 않는 이유 — 소스를 열면 누구나 보이니까. */
+async function adminGate(){
+  const lk=lockGet('admin');
+  if(lk.until>Date.now()){ toast('3번 틀렸어요. 10분 뒤에 다시 오세요. 그동안 냉탕이라도 다녀오시고요.','bad'); return false; }
+  const exists=DB.members.some(m=>m.isAdmin);
+  if(!exists){
+    const a=await pinBox(8,{title:'범쨩 등록',
+      desc:'범쨩은 이 페이지 주인 자리예요. 쓰실 8자리 숫자를 정해주세요.',
+      warn:'지금 정한 번호가 앞으로의 범쨩 비번입니다. 복구가 안 돼요.',okLabel:'등록'});
+    if(!a||a.length<8) return false;
+    const b=await pinBox(8,{title:'한 번 더',desc:'확인을 위해 같은 번호를 다시 넣어주세요.',okLabel:'등록'});
+    if(b!==a){ toast('두 번 넣은 번호가 달라요. 다시 해주세요.','bad'); return false; }
+    try{ await Api.adminClaim(a); }
+    catch(e){ if(String(e.message)!=='ADMIN_EXISTS'){ toast(errMsg(e),'bad'); return false; } }
+    toast('범쨩 등록 완료. 출근하셨습니다.','good'); await reload(); renderAll(); return true;
+  }
+  for(;;){
+    const a=await pinBox(8,{title:'범쨩 확인',desc:'범쨩 비밀번호 8자리를 넣어주세요.'});
+    if(!a) return false;
+    try{
+      if(Api.mode==='supabase') await Api.login(ADMIN_NICK,a); else await Api.adminLogin(a);
+      lockClear('admin'); toast('범쨩 출근!','good'); await reload(); renderAll(); return true;
+    }catch(e){
+      if(String(e.message)!=='BAD_PIN'){ toast(errMsg(e),'bad'); return false; }
+      const l=lockHit('admin',TRIES,ADMIN_LOCK);
+      if(l.until>Date.now()){ toast('3번 틀렸어요. 10분 뒤에 다시 오세요. 그동안 냉탕이라도 다녀오시고요.','bad'); return false; }
+      toast('범쨩 아니신 것 같은데요.. 남은 시도 '+(TRIES-l.tries)+'번.','bad');
+    }
+  }
+}
+
+/* --- 인사해요 ---------------------------------------------------- */
+function buildGreetFields(prev){
+  const box=$('#greetFields'); box.innerHTML='';
+  GREET_Q.forEach(q=>{
+    const f=el('div','field');
+    f.innerHTML=`<label for="g_${q.k}">${esc(q.label)}${q.req?'':' <span class="t-meta">(선택)</span>'}</label>
+      <span class="hint">${esc(q.hint)}</span>
+      <textarea id="g_${q.k}" maxlength="200" style="min-height:70px" placeholder="${esc(q.ph)}"></textarea>`;
+    box.appendChild(f);
+    if(prev&&prev[q.k]) f.querySelector('textarea').value=prev[q.k];
+  });
+}
+function openGreet(){
+  return new Promise(async res=>{
+    if(!Me.row){ const ok=await needNick(); if(!ok) return res(false); }
+    const mine=DB.greetings.find(g=>g.nickKey===Me.key);
+    buildGreetFields(mine&&mine.answers);
+    const d=$('#dlgGreet');
+    d.onclose=async()=>{
+      if(d.returnValue!=='ok') return res(false);
+      const ans={};
+      GREET_Q.forEach(q=>{ans[q.k]=$('#g_'+q.k).value.trim();});
+      if(ans.q1.length<5||ans.q2.length<5){
+        toast('앞의 두 개만 채워주시면 돼요. 정말 두 줄이면 끝나요.','bad');
+        setTimeout(()=>d.showModal(),0); return;
+      }
+      const first=!Me.row.greetedAt;
+      try{ await Api.greet(ans); }
+      catch(ex){ toast(errMsg(ex),'bad'); setTimeout(()=>d.showModal(),0); return; }
+      toast(first?'정식 입덕 완료! 이제 마음껏 주접 떠셔도 됩니다':'인사 고쳤어요','good');
+      await reload(); renderAll(); res(true);
+    };
+    d.showModal();
+  });
+}
+
+/* --- 주접 ------------------------------------------------------- */
+let editing=null;
+async function openPost(){
+  if(!await needFull()) return;
+  const last=DB.posts.filter(p=>p.nickKey===Me.key).sort((a,b)=>b.createdAt-a.createdAt)[0];
+  if(last&&Date.now()-last.createdAt<POST_COOLDOWN&&!Me.can('moderate')){
+    const s=Math.ceil((POST_COOLDOWN-(Date.now()-last.createdAt))/1000);
+    toast('조금만 쉬었다 가요. '+s+'초 뒤에 다시 쓰실 수 있어요.','bad'); return;
+  }
+  editing=null; $('#postTitle').textContent='주접 쓰기'; $('#postOk').textContent='올리기';
+  $('#postBody').value=''; updCount('#postBody','#postCount',LIM.POST);
+  $('#dlgPost').showModal(); setTimeout(()=>$('#postBody').focus(),60);
+}
+async function editPost(p){
+  editing=p; $('#postTitle').textContent='주접 고치기'; $('#postOk').textContent='고치기';
+  $('#postBody').value=p.body; updCount('#postBody','#postCount',LIM.POST);
+  $('#dlgPost').showModal();
+}
+$('#dlgPost').addEventListener('close',async function(){
+  if(this.returnValue!=='ok'){ editing=null; return; }
+  const body=$('#postBody').value.trim(), target=editing; editing=null;
+  if(!body){toast('내용을 써주셔야 올라가요.','bad');return;}
+  if(body.length>LIM.POST){toast('500자가 한계예요. (현재 '+body.length+'자)','bad');return;}
+  if(target){
+    if(await withPin(pin=>Api.editPost(target.id,body,pin))){ toast('고쳐졌어요','good'); await reload(); }
+  }else{
+    try{ await Api.createPost(body); toast('주접 접수 완료!','good'); await reload(); }
+    catch(e){ toast(errMsg(e),'bad'); }
+  }
+});
+async function removePost(p){
+  if(!await confirmBox('주접 지우기','지우면 댓글도 같이 사라져요. 진짜 지울까요?','지울래요','그냥 둘래요')) return;
+  if(await withPin(pin=>Api.deletePost(p.id,pin))){ toast('내려갔습니다','good'); await reload(); }
+}
+async function hidePost(p){
+  try{
+    if(p.hidden){ await Api.hidePost(p.id,false,null); toast('다시 보이게 했어요'); }
+    else{
+      const why=await textBox('글 숨기기','왜 숨기는지 한 줄만 적어주세요. 작성자에게도 보입니다.');
+      if(why===null) return;
+      await Api.hidePost(p.id,true,why||'규칙 위반'); toast('냉탕으로 모셨습니다');
+    }
+    await reload();
+  }catch(e){ toast(errMsg(e),'bad'); }
+}
+
+/* --- 공감 ------------------------------------------------------- */
+async function toggleLike(p,btn){
+  if(!await needNick()) return;
+  const on=btn.getAttribute('aria-pressed')==='true', n=btn.querySelector('.n');
+  btn.setAttribute('aria-pressed',on?'false':'true');
+  n.textContent=String(Math.max(0,(+n.textContent||0)+(on?-1:1)));
+  if(!on){btn.classList.remove('pop');void btn.offsetWidth;btn.classList.add('pop');}
+  try{
+    const r=await Api.toggleLike(p.id);
+    btn.setAttribute('aria-pressed',r.liked?'true':'false');
+    n.textContent=String(r.count);
+    await reload();
+  }catch(e){
+    btn.setAttribute('aria-pressed',on?'true':'false');
+    n.textContent=String(Math.max(0,(+n.textContent||0)+(on?1:-1)));
+    toast(errMsg(e),'bad');
+  }
+}
+
+/* --- 공용 텍스트 입력 모달 --------------------------------------- */
+function textBox(title,desc,value,max){
+  return new Promise(res=>{
+    const d=$('#dlgText'), ta=$('#txBody');
+    $('#txTitle').textContent=title; $('#txDesc').textContent=desc||'';
+    ta.value=value||''; ta.maxLength=max||500;
+    d.onclose=()=>res(d.returnValue==='ok'?ta.value.trim():null);
+    d.showModal(); setTimeout(()=>ta.focus(),60);
+  });
+}
+function updCount(sel,out,max){
+  const t=$(sel), o=$(out); const n=t.value.length;
+  o.textContent=n+' / '+max; o.classList.toggle('over',n>max);
+}
+
+/* --- 글 상세 + 댓글 ---------------------------------------------- */
+let detailId=null;
+function openDetail(id){ detailId=id; drawDetail(); $('#dlgDetail').showModal(); }
+function drawDetail(){
+  const p=DB.posts.find(x=>x.id===detailId); const box=$('#detailBody');
+  if(!p){box.textContent='이 글은 내려갔어요.';return;}
+  box.innerHTML='';
+  const head=el('div','post');
+  head.innerHTML=`<div class="who"><span class="nick">${esc(p.nick)}</span>
+    <span class="t-meta">${esc(ago(p.createdAt))}</span></div>
+    <div class="body">${esc(p.hidden?'온도 조절 중인 글이에요.':p.body)}</div>`;
+  box.appendChild(head);
+
+  const cs=DB.comments.filter(c=>c.postId===p.id).sort((a,b)=>a.createdAt-b.createdAt);
+  if(!cs.length){
+    const e=el('p','t-meta','댓글이 아직 없어요. 뜨거울 때 한마디 얹어주세요.');
+    e.style.marginTop='var(--s4)'; box.appendChild(e);
+  }
+  cs.forEach(c=>{
+    const w=el('div','comment');
+    w.innerHTML=`<div class="who"><span class="nick">${esc(c.nick)}</span>
+      <span class="t-meta">${esc(ago(c.createdAt))}</span></div>
+      <div class="body">${esc(c.hidden?'범쨩이 치운 댓글이에요.':c.body)}</div>`;
+    if((Me.key&&c.nickKey===Me.key)||Me.can('moderate')){
+      const d=el('button','btn btn--sm btn--danger','지우기'); d.type='button';
+      d.style.marginTop='var(--s2)';
+      d.addEventListener('click',async()=>{
+        if(!await confirmBox('댓글 지우기','이 댓글 지울까요?','네','아니요')) return;
+        const run=pin=>Api.deleteComment(c._id,pin);
+        const ok = c.nickKey===Me.key ? await withPin(run)
+                 : await run(null).then(()=>true).catch(e=>{toast(errMsg(e),'bad');return false;});
+        if(ok){ toast('댓글 내려갔어요','good'); await reload(); drawDetail(); }
+      });
+      w.appendChild(d);
+    }
+    box.appendChild(w);
+  });
+
+  const f=el('div','field'); f.style.marginTop='var(--s5)';
+  f.innerHTML=`<label for="cmtIn">한마디 얹기</label>
+    <textarea id="cmtIn" maxlength="200" style="min-height:72px" placeholder="두 장은 확정입니다. 저는 한 장 받았어요."></textarea>`;
+  const send=el('button','btn btn--primary','올리기'); send.type='button';
+  send.style.marginTop='var(--s2)';
+  send.addEventListener('click',async()=>{
+    if(!await needFull()) return;
+    const body=$('#cmtIn').value.trim();
+    if(!body){toast('내용을 써주셔야 올라가요.','bad');return;}
+    try{ await Api.createComment(p.id,body); toast('한마디 얹었어요','good'); await reload(); drawDetail(); }
+    catch(e){ toast(errMsg(e),'bad'); }
+  });
+  f.appendChild(send); box.appendChild(f);
+}
+
+/* --- 팬미팅 : 아이디당 하루 한 장 -------------------------------- */
+function myQToday(){ return DB.questions.find(q=>q.nickKey===Me.key&&q.day===kstDay()); }
+function refreshQGate(){
+  const hint=$('#qHint'), ta=$('#qBody'), btn=$('#qSubmit');
+  if(!Me.row){ hint.textContent=GATE.guestQ; ta.disabled=false; btn.disabled=false; return; }
+  if(!Me.can('question')){ hint.textContent=GATE.memberQ; ta.disabled=false; btn.disabled=false; return; }
+  const q=myQToday();
+  if(q){ ta.disabled=true; btn.disabled=true;
+    hint.textContent='오늘 질문은 이미 한 장 쓰셨어요. 자정 지나면 새 걸로 드립니다. (남은 시간 '+hhmmss(tillMidnight())+')';
+  }else{ ta.disabled=false; btn.disabled=false;
+    hint.textContent='5자 이상 200자 이하 · 오늘 남은 질문 1장'; }
+}
+async function submitQuestion(){
+  if(!await needFull(GATE.memberQ)) return;
+  if(myQToday()){ refreshQGate();
+    toast('오늘 질문은 이미 한 장 쓰셨어요. 자정 지나면 새 걸로 드립니다.','bad'); return; }
+  const body=$('#qBody').value.trim();
+  if(body.length<LIM.Q_MIN){toast('조금만 더 써주세요. 다섯 글자는 넘겨야 질문 같아요.','bad');return;}
+  /* 하루 한 장은 (사람, 한국 날짜) 유니크가 막는다. 화면을 뚫어도 두 번째는 안 들어간다. */
+  try{ await Api.createQuestion(body); }
+  catch(e){ toast(errMsg(e),'bad'); refreshQGate(); return; }
+  $('#qBody').value=''; updCount('#qBody','#qCount',LIM.Q);
+  toast('질문 접수! 답이 올지는 사장님 마음이에요.','good'); await reload(); refreshQGate();
+}
+async function answerQ(q){
+  const a=await textBox('사장님 답변 옮겨 적기',
+    '사장님이 계정이나 다른 데 남기신 답을 그대로 옮겨주세요. 여기서 직접 답해주셔도 되고요.',q.answer||'',500);
+  if(a===null) return;
+  try{ await Api.answerQ(q._id,a); toast(a?'답변 붙였습니다':'답변 지웠어요','good'); await reload(); }
+  catch(e){ toast(errMsg(e),'bad'); }
+}
+
+/* --- 신고 ------------------------------------------------------- */
+async function report(type,id){
+  if(!await needFull()) return;
+  const why=await textBox('신고하기','어떤 점이 문제인지 짧게 적어주세요. 욕설 / 개인정보 / 홍보 / 도배 / 기타');
+  if(why===null) return;
+  try{ await Api.report(type,id,why||'기타'); toast('신고 접수됐어요. 범쨩이 확인할게요.','good'); await reload(); }
+  catch(e){ toast(errMsg(e),'bad'); }
+}
+async function openReports(){
+  const box=$('#reportBody'); box.innerHTML='';
+  let rows=[]; try{ rows=await Api.listReports()||[]; }catch(e){ toast(errMsg(e),'bad'); }
+  if(!rows.length){ box.appendChild(emptyBox('신고 없음. 평화로운 탕이네요.','','','sleep')); }
+  else rows.forEach(r=>{
+    const p=DB.posts.find(x=>String(x.id)===String(r.targetId));
+    const w=el('div','card-wrap'), c=el('div','card');
+    c.innerHTML=`<p class="t-meta">${esc(r.targetType)} · ${esc(ago(Date.parse(r.createdAt)||r.createdAt))} · 신고자 ${esc(r.nick)}</p>
+      <p style="margin-top:var(--s2)"><strong>사유</strong> ${esc(r.reason)}</p>
+      <div class="body" style="margin-top:var(--s2)">${p?esc(p.body.slice(0,120)):'(대상이 이미 없어요)'}</div>`;
+    const done=el('button','btn btn--sm','처리 완료'); done.type='button'; done.style.marginTop='var(--s3)';
+    done.addEventListener('click',async()=>{
+      try{ await Api.clearReport(r.id); toast('신고함에서 치웠어요'); openReports(); }
+      catch(e){ toast(errMsg(e),'bad'); }});
+    c.appendChild(done);
+    if(p){ const h=el('button','btn btn--sm btn--danger','글 숨기기');h.type='button';
+      h.style.cssText='margin-top:var(--s3);margin-left:var(--s2)';
+      h.addEventListener('click',()=>hidePost(p)); c.appendChild(h); }
+    w.appendChild(c); box.appendChild(w);
+  });
+  $('#dlgReports').showModal();
+}
+
+/* --- 범쨩 : 공지 / 링크 ------------------------------------------ */
+async function editNotice(){
+  const cur=DB.notices.find(x=>x._id==='notice_active');
+  const b=await textBox('공지 올리기','비우고 저장하면 공지가 내려갑니다.',cur?cur.body:'',300);
+  if(b===null) return;
+  try{ await Api.setNotice(b); toast(b?'공지 올렸습니다':'공지 내렸어요','good'); await reload(); }
+  catch(e){ toast(errMsg(e),'bad'); }
+}
+function openLinkEditor(){
+  const saved=DB.links[0]||{}; const box=$('#linkFields'); box.innerHTML='';
+  LINKS.forEach(l=>{
+    const f=el('div','field');
+    f.innerHTML=`<label for="lk_${l.key}">${esc(l.platform)}</label>
+      <span class="hint">${esc(l.desc)}</span>
+      <input id="lk_${l.key}" type="url" placeholder="https://" autocomplete="off">`;
+    box.appendChild(f);
+    f.querySelector('input').value=saved[l.key]||l.url||'';
+  });
+  const d=$('#dlgLinks');
+  d.onclose=async()=>{
+    if(d.returnValue!=='ok') return;
+    const out={};
+    LINKS.forEach(l=>{
+      const v=$('#lk_'+l.key).value.trim();
+      if(v&&/^https?:\/\//i.test(v)) out[l.key]=v;
+      else if(v) toast(l.platform+' 주소는 http로 시작해야 해요','bad');
+    });
+    try{ await Api.setLinks(out); toast('링크 저장했어요','good'); await reload(); }
+    catch(e){ toast(errMsg(e),'bad'); }
+  };
+  d.showModal();
+}
+
+/* --- 스팀 장식 --------------------------------------------------- */
+function drawSteam(){
+  $$('[data-steam]').forEach(box=>{ box.innerHTML=ART.steam_b.repeat(3); });
+}
+
+/* --- 부팅 ------------------------------------------------------- */
+const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links'];
+const POLL_MS=15000;
+
+async function boot(){
+  drawSteam();
+  $('#ruleList').innerHTML=RULES.map(([t,d])=>
+    `<li><strong>${esc(t)}</strong><br><span class="t-meta">${esc(d)}</span></li>`).join('');
+
+  /* 설정이 채워져 있으면 Supabase, 아니면 문서 저장소로 */
+  Api=(SUPABASE.url&&SUPABASE.anonKey)?ApiSupabase:ApiDoc;
+  let mode=await Api.init();
+
+  if(mode==='supabase'){
+    try{ await Api.refresh(); }
+    catch(e){
+      /* 아티팩트처럼 바깥으로 못 나가는 곳이 있다. 글이 안 보이는 채로
+         두기보다 저장소를 바꾸고 솔직히 알린다. */
+      Api=ApiDoc; mode=await Api.init();
+      toast('서버에 못 닿아서 이 기기에만 저장되는 모드로 엽니다.','bad');
+    }
+  }
+
+  $('#modeNote').textContent =
+    mode==='supabase' ? '여기 쓴 글은 이 주소를 여는 모든 사람에게 보여요.'
+  : mode==='db'       ? '여기 쓴 글은 이 페이지를 여는 모든 사람에게 보여요.'
+  :                     '지금은 이 기기에만 저장되는 모드예요. 쓰신 글은 다른 사람에게 안 보입니다.';
+
+  if(mode==='supabase'){
+    const pull=async()=>{ try{ await Api.refresh(); renderAll();
+                                if($('#dlgDetail').open) drawDetail(); }catch(e){} };
+    const me=await Api.restore();
+    if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
+    renderAll();
+    setInterval(pull,POLL_MS);
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pull(); });
+  }else{
+    COLS.forEach(c=>Store.watch(c,rows=>{
+      DB[c]=rows;
+      if(c==='members'&&Me.key){ const r=rows.find(x=>x.nickKey===Me.key); if(r) Object.assign(Me.row||{},r); }
+      renderAll();
+      if($('#dlgDetail').open) drawDetail();
+    }));
+    const me=await Api.restore();
+    if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
+    renderAll();
+  }
+
+  /* 입덕 일수와 팬미팅 카운트다운은 한국 자정에 맞춰 갱신된다 */
+  setInterval(()=>{ renderMe(); refreshQGate(); },1000);
+}
+
+/* --- 이벤트 배선 ------------------------------------------------- */
+$('#rulesBtn').addEventListener('click',()=>$('#dlgRules').showModal());
+$('#jumpHello').addEventListener('click',()=>$('#hello').scrollIntoView({behavior:'smooth',block:'start'}));
+$('#meBtn').addEventListener('click',async()=>{
+  if(!Me.row){ await openNick(); return; }
+  if(await confirmBox('이름표 떼기','이 기기에서 이름표만 뗍니다. 쓰신 글은 그대로 남아요.','뗄래요','취소')){
+    Me.nick=null; Me.row=null; Api.signOut();
+    toast('이름표 뗐습니다. 구경은 계속하실 수 있어요.'); renderAll();
+  }
+});
+$('#writeFab').addEventListener('click',openPost);
+$('#greetBtn').addEventListener('click',openGreet);
+$('#qSubmit').addEventListener('click',submitQuestion);
+$('#moreBtn').addEventListener('click',()=>{shown+=PAGE;renderPosts();});
+$('#noticeBtn').addEventListener('click',editNotice);
+$('#reportBtn').addEventListener('click',openReports);
+$('#linkEditBtn').addEventListener('click',openLinkEditor);
+$('#postBody').addEventListener('input',()=>updCount('#postBody','#postCount',LIM.POST));
+$('#qBody').addEventListener('input',()=>updCount('#qBody','#qCount',LIM.Q));
+$$('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+
+
+boot();
+})();
+</script>
+</body>
+</html>
