@@ -17,7 +17,28 @@
 
 왼쪽 메뉴 **SQL Editor** → **New query** → `schema.sql` 내용을 통째로 붙여넣고 **Run**.
 
-`Success. No rows returned` 가 뜨면 끝입니다. 테이블 9개, 뷰 8개, 함수 27개가 생깁니다.
+`Success. No rows returned` 가 뜨면 끝입니다.
+
+### 실행 전 경고 팝업이 뜬다면
+
+Supabase SQL Editor 는 실행 전에 쿼리를 훑어보고 경고를 띄웁니다. 이 스크립트에서는
+**destructive operation** 경고가 뜨는데, `revoke` 구문 때문입니다. 테이블 권한을
+anon 에게서 거둬들이는 건 이 설계의 핵심이라 꼭 필요한 구문이에요. 그대로 진행하세요.
+
+`creates tables without enabling RLS` 경고가 뜬다면 예전 버전을 쓰고 계신 겁니다.
+지금 스크립트는 `alter table ... enable row level security` 를 테이블마다 한 줄씩
+명시해서 린터가 알아볼 수 있게 해뒀습니다.
+
+실행한 뒤 이걸로 직접 확인해보셔도 됩니다. 9줄 전부 `t` 가 나와야 맞아요.
+
+```sql
+select relname, relrowsecurity as rls_enabled
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = 'public' and relkind = 'r'
+ order by relname;
+```
+
+ 테이블 9개, 뷰 8개, 함수 27개가 생깁니다.
 여러 번 실행해도 안전하니 나중에 스키마를 고칠 때도 그냥 다시 붙여넣으면 됩니다.
 
 ## 3. 주소와 키 — 이미 넣어뒀습니다
@@ -246,12 +267,15 @@ create table if not exists fc_reports (
 -- --------------------------------------------------------------- 잠그기 --
 -- 정책을 하나도 만들지 않는다. RLS가 켜져 있고 정책이 없으면 바깥에서는
 -- 읽기도 쓰기도 전부 막힌다. 아래 뷰와 함수만이 유일한 통로다.
-do $$ declare t text;
-begin
-  foreach t in array array['fc_members','fc_posts','fc_comments','fc_likes',
-                           'fc_greetings','fc_questions','fc_notices','fc_links','fc_reports']
-  loop execute format('alter table %I enable row level security', t); end loop;
-end $$;
+alter table fc_members enable row level security;
+alter table fc_posts enable row level security;
+alter table fc_comments enable row level security;
+alter table fc_likes enable row level security;
+alter table fc_greetings enable row level security;
+alter table fc_questions enable row level security;
+alter table fc_notices enable row level security;
+alter table fc_links enable row level security;
+alter table fc_reports enable row level security;
 
 -- ------------------------------------------------------------------ 뷰 --
 -- 뷰는 소유자 권한으로 돌아서 RLS를 통과한다. 그래서 여기 적은 컬럼만,
@@ -587,12 +611,14 @@ begin perform fc_need_admin(p_token); delete from fc_reports where id = p_id; en
 
 -- ------------------------------------------------------------------ 권한 --
 -- 뷰는 읽기만, 함수는 실행만. 테이블 자체는 anon 에게 아무 권한도 주지 않는다.
-do $$ declare v text;
-begin
-  foreach v in array array['v_members','v_posts','v_comments','v_likes',
-                           'v_greetings','v_questions','v_notice','v_links']
-  loop execute format('grant select on %I to anon, authenticated', v); end loop;
-end $$;
+grant select on v_members to anon, authenticated;
+grant select on v_posts to anon, authenticated;
+grant select on v_comments to anon, authenticated;
+grant select on v_likes to anon, authenticated;
+grant select on v_greetings to anon, authenticated;
+grant select on v_questions to anon, authenticated;
+grant select on v_notice to anon, authenticated;
+grant select on v_links to anon, authenticated;
 
 revoke all on fc_members, fc_posts, fc_comments, fc_likes, fc_greetings,
               fc_questions, fc_notices, fc_links, fc_reports from anon, authenticated;
@@ -602,20 +628,28 @@ revoke all on function fc_auth(uuid), fc_need_admin(uuid),
                        fc_check_pin(fc_members, text), fc_profile(fc_members)
        from anon, authenticated, public;
 
-do $$ declare f text;
-begin
-  foreach f in array array[
-    'fc_join(text)','fc_login(text,text)','fc_login_by_token(uuid)','fc_set_pin(uuid,text)','fc_admin_claim(text)',
-    'fc_greet(uuid,jsonb)','fc_create_post(uuid,text)','fc_edit_post(uuid,bigint,text,text)',
-    'fc_delete_post(uuid,bigint,text)','fc_toggle_like(uuid,bigint)',
-    'fc_create_comment(uuid,bigint,text)','fc_delete_comment(uuid,bigint,text)',
-    'fc_create_question(uuid,text)','fc_report(uuid,text,bigint,text)',
-    'fc_admin_hide_post(uuid,bigint,boolean,text)','fc_admin_pin_post(uuid,bigint,boolean)',
-    'fc_admin_answer(uuid,bigint,text)','fc_admin_hide_greeting(uuid,bigint)',
-    'fc_admin_notice(uuid,text)','fc_admin_links(uuid,jsonb)',
-    'fc_admin_reports(uuid)','fc_admin_clear_report(uuid,bigint)']
-  loop execute format('grant execute on function %s to anon, authenticated', f); end loop;
-end $$;
+grant execute on function fc_join(text) to anon, authenticated;
+grant execute on function fc_login(text,text) to anon, authenticated;
+grant execute on function fc_login_by_token(uuid) to anon, authenticated;
+grant execute on function fc_set_pin(uuid,text) to anon, authenticated;
+grant execute on function fc_admin_claim(text) to anon, authenticated;
+grant execute on function fc_greet(uuid,jsonb) to anon, authenticated;
+grant execute on function fc_create_post(uuid,text) to anon, authenticated;
+grant execute on function fc_edit_post(uuid,bigint,text,text) to anon, authenticated;
+grant execute on function fc_delete_post(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_toggle_like(uuid,bigint) to anon, authenticated;
+grant execute on function fc_create_comment(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_delete_comment(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_create_question(uuid,text) to anon, authenticated;
+grant execute on function fc_report(uuid,text,bigint,text) to anon, authenticated;
+grant execute on function fc_admin_hide_post(uuid,bigint,boolean,text) to anon, authenticated;
+grant execute on function fc_admin_pin_post(uuid,bigint,boolean) to anon, authenticated;
+grant execute on function fc_admin_answer(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_admin_hide_greeting(uuid,bigint) to anon, authenticated;
+grant execute on function fc_admin_notice(uuid,text) to anon, authenticated;
+grant execute on function fc_admin_links(uuid,jsonb) to anon, authenticated;
+grant execute on function fc_admin_reports(uuid) to anon, authenticated;
+grant execute on function fc_admin_clear_report(uuid,bigint) to anon, authenticated;
 
 insert into fc_notices (id, body, active) values (1, null, false) on conflict do nothing;
 insert into fc_links   (id, urls)         values (1, '{}'::jsonb) on conflict do nothing;
