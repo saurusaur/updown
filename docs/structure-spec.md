@@ -1020,7 +1020,7 @@ function hotScore(post, now = Date.now()) {
 ```js
 const LINKS=[
   {key:'marpple',  platform:'마플샵 스토어',      icon:'shop', url:'https://marpple.shop/kr/geumsaemtang',
-   desc:'금샘탕 키링이랑 입장료 할인되는 티셔츠 구경하기'},
+   desc:'한정 굿즈와 입장료 할인되는 티셔츠 구경하세요'},
   {key:'instagram',platform:'인스타그램',          icon:'ig',   url:'https://www.instagram.com/geumsaemtang',
    desc:'가장 빠르게 만나는 실시간 금샘탕 소식'},
   {key:'blog',     platform:'블로그',              icon:'blog', url:'https://m.blog.naver.com/miontang',
