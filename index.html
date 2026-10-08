@@ -176,6 +176,18 @@ section{margin-block:var(--sec);}
 /* 픽셀: clip-path가 box-shadow를 잘라먹어서 그림자를 래퍼로 뺀다 */
 .card-wrap{box-shadow:var(--sh);}
 .card-wrap{border-radius:var(--r-a);}
+/* --- 6-1. 못 들어가는 화면 ---------------------------------------- */
+#downScreen{position:fixed;inset:0;z-index:999;display:flex;align-items:center;
+  justify-content:center;padding:var(--s4);background:var(--bg);background-image:var(--tex);}
+.down-box{max-width:420px;width:100%;text-align:center;
+  background:var(--card);border:var(--bd);border-radius:var(--r-a);box-shadow:var(--sh);
+  clip-path:var(--clip);padding:var(--s5) var(--s4);}
+.down-art{font:400 var(--t-h1)/1.2 var(--font-body);margin-bottom:var(--s3);}
+.down-box h2{font:400 var(--t-h2)/1.3 var(--font-head);margin-bottom:var(--s3);}
+.down-box p{margin-bottom:var(--s3);}
+.down-box .btn{width:100%;}
+.down-why{opacity:.6;word-break:break-all;margin-top:var(--s3);margin-bottom:0;}
+
 /* --- 7. 버튼 ----------------------------------------------------- */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:var(--s1);
@@ -691,6 +703,18 @@ dialog::backdrop{
     <button class="btn btn--primary" value="ok" type="submit" id="postOk">올리기</button>
   </div>
 </form></dialog>
+
+<div id="downScreen" hidden>
+  <div class="down-box">
+    <p class="down-art" aria-hidden="true">( ˘ω˘ )</p>
+    <h2>잠시 물 데우는 중</h2>
+    <p>서버에 닿지 못했어요. 잠깐 쉬고 있는 것 같습니다.<br>
+       조금 있다 다시 들러주세요.</p>
+    <button class="btn btn--primary" type="button" id="downRetry">다시 시도</button>
+    <p class="t-meta" id="downCount"></p>
+    <p class="t-meta down-why" id="downWhy"></p>
+  </div>
+</div>
 
 <dialog id="dlgDetail"><div class="sheet">
   <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
@@ -2386,6 +2410,29 @@ function drawSteam(){
   $$('[data-steam]').forEach(box=>{ box.innerHTML=ART.steam_b.repeat(3); });
 }
 
+/* --- 못 들어갈 때 ------------------------------------------------ */
+let downTimer=null;
+function showDown(err){
+  const box=$('#downScreen'); box.hidden=false;
+  $('#downWhy').textContent = err&&err.message ? '서버가 한 말: '+err.message : '';
+  let left=20;
+  const tick=()=>{
+    $('#downCount').textContent=left>0?left+'초 뒤에 저절로 다시 해볼게요.':'다시 해보는 중…';
+    if(left--<=0){ clearInterval(downTimer); retryBoot(); }
+  };
+  tick(); clearInterval(downTimer); downTimer=setInterval(tick,1000);
+  $('#downRetry').onclick=()=>{ clearInterval(downTimer); retryBoot(); };
+}
+async function retryBoot(){
+  $('#downCount').textContent='다시 해보는 중…';
+  try{
+    await Api.refresh();
+    clearInterval(downTimer);
+    $('#downScreen').hidden=true;
+    await startAfterLoad();
+  }catch(e){ showDown(e); }
+}
+
 /* --- 부팅 ------------------------------------------------------- */
 const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings'];
 
@@ -2398,29 +2445,25 @@ async function boot(){
   Api=(SUPABASE.url&&SUPABASE.anonKey)?ApiSupabase:ApiDoc;
   let mode=await Api.init();
 
-  if(mode==='supabase'){
-    try{ await Api.refresh(); }
-    catch(e){
-      /* 아티팩트처럼 바깥으로 못 나가는 곳이 있다. 글이 안 보이는 채로
-         두기보다 저장소를 바꾸고 솔직히 알린다. */
-      Api=ApiDoc; mode=await Api.init();
-      toast('서버에 닿지 못해서 이 기기에만 저장되는 모드로 엽니다.','bad');
-    }
-  }
-
   $('#modeNote').textContent =
     mode==='supabase' ? '여기 쓴 글은 이 주소를 여는 모든 사람에게 보여요.'
   : mode==='db'       ? '여기 쓴 글은 이 페이지를 여는 모든 사람에게 보여요.'
   :                     '지금은 이 기기에만 저장되는 모드예요. 쓰신 글은 다른 사람에게 안 보입니다.';
 
   if(mode==='supabase'){
+    /* 서버를 쓰기로 해놓고 못 닿으면 거기서 멈춘다. 이 기기에만 저장되는
+       모드로 떨어뜨려봐야 혼자 쓰는 방이라 팬클럽에선 의미가 없고,
+       남들 글이 사라진 것처럼 보이기만 한다. */
+    try{ await Api.refresh(); }
+    catch(e){ showDown(e); return; }
+  }
+
+  if(mode==='supabase'){
+    await startAfterLoad();
     /* 주기적으로 다시 그리지 않는다. 쓰기 직후엔 reload() 가 당겨오고,
        그 밖에는 이 페이지로 돌아올 때 한 번만 맞춘다. 가만히 보고 있는
        화면을 멋대로 갈아끼우면 쓰던 글이 날아간다. */
     const pull=async()=>{ try{ await Api.refresh(); paintSoon(); }catch(e){} };
-    const me=await Api.restore();
-    if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
-    renderAll(); checkWarnings();
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pull(); });
     window.addEventListener('focus',pull);
   }else{
@@ -2436,6 +2479,15 @@ async function boot(){
 
   /* 입덕 일수와 팬미팅 카운트다운은 한국 자정에 맞춰 갱신된다 */
   setInterval(()=>{ renderMe(); refreshQGate(); },1000);
+}
+
+/** 서버에서 한 번 받아온 뒤의 공통 시작. 재시도로 들어와도 여기로 모인다. */
+let greeted=false;
+async function startAfterLoad(){
+  const me=await Api.restore();
+  if(me&&!greeted){ greeted=true;
+    toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.'); }
+  renderAll(); checkWarnings();
 }
 
 /* --- 이벤트 배선 ------------------------------------------------- */
