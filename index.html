@@ -241,18 +241,8 @@ input:focus,textarea:focus{background:var(--bg-soft);outline:3px solid var(--blu
 .sec-sub{font:400 var(--t-meta)/1.5 var(--font-body);color:var(--ink-soft);margin-bottom:var(--s2);line-height:1.45;}
 
 /* --- 11. 툴바 (히어로 아래 한 줄) --- */
-/* 두 덩어리로 묶어 각 덩어리는 안 쪼개지고, 좁아지면 덩어리째 줄을 바꾼다 */
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
-  gap:var(--s2) var(--s4);margin-bottom:var(--s6);}
-.tb-who,.tb-act{display:flex;align-items:center;gap:var(--s2);flex-wrap:nowrap;}
-.tb-who:empty{display:none;}
-@media (min-width:720px){ .toolbar{justify-content:space-between;} }
-.counter-chip{display:inline-flex;align-items:baseline;gap:3px;
-  padding:5px var(--s3);background:var(--yolk);color:#141414;
-  border:var(--bd);border-radius:var(--r-pill);clip-path:var(--clip);}
-.counter-chip .n{font:400 var(--t-h2)/1 var(--font-display);font-variant-numeric:tabular-nums;}
-.counter-chip .u{font:500 var(--t-meta)/1 var(--font-body);}
-.counter-chip{border-radius:0;}
+  gap:var(--s2);margin-bottom:var(--s6);}
 
 /* --- 12. 히어로 + 레터링 ----------------------------------------- */
 .hero{display:grid;grid-template-columns:auto auto auto;align-items:center;
@@ -373,8 +363,9 @@ dialog::backdrop{
 
 /* 접히는 패널 */
 .panel{padding:0;}
-.panel-head{display:flex;align-items:center;gap:var(--s2);cursor:pointer;
+.panel-head{display:flex;flex-direction:column;gap:var(--s2);cursor:pointer;
   padding:var(--s3) var(--s4);list-style:none;}
+.panel-top{display:flex;align-items:center;gap:var(--s2);}
 .panel-head::-webkit-details-marker{display:none;}
 .panel-head:hover{background:var(--card-2);}
 .panel-head:focus-visible{outline:3px solid var(--blue-ink);outline-offset:-3px;}
@@ -383,12 +374,12 @@ dialog::backdrop{
 .panel-mark::before{left:0;top:6px;width:14px;height:2px;}
 .panel-mark::after{left:6px;top:0;width:2px;height:14px;transition:opacity var(--dur-fast);}
 .panel[open] .panel-mark::after{opacity:0;}
-.panel-body{padding:0 var(--s4) var(--s4);}
+.panel-body{padding:var(--s1) var(--s4) var(--s4);}
 
 /* 입덕 스탯 */
 .stat-head{font:400 var(--t-h3)/1.3 var(--font-body);font-weight:700;}
-.stat-big{display:flex;align-items:baseline;gap:5px;
-  padding:var(--s2) var(--s3);margin-bottom:var(--s3);
+.stat-big{display:flex;align-items:baseline;gap:5px;align-self:flex-start;
+  padding:var(--s2) var(--s3);
   background:var(--yolk);color:#141414;border:var(--bd);clip-path:var(--clip);}
 .stat-big .n{font:400 var(--t-count)/1 var(--font-display);font-variant-numeric:tabular-nums;}
 .stat-big .u{font:500 var(--t-ui)/1 var(--font-body);}
@@ -445,17 +436,9 @@ dialog::backdrop{
     <p class="hero-sub">금샘탕을 운영하시는 강다운 사장님을 좋아하는 사람들이 모여서 주접 떠는 곳이에요</p>
 
     <div class="toolbar">
-      <div class="tb-who">
-        <span class="counter-chip" id="dayChip" hidden>
-          <span class="n"><span class="lat" id="dayNum">00</span></span><span class="u">일째 입덕 ing..</span>
-        </span>
-        <span class="me-chip" id="meChip" hidden></span>
-      </div>
-      <div class="tb-act">
-        <button class="btn btn--sm" type="button" id="rulesBtn">활동 규칙</button>
-        <button class="btn btn--sm" type="button" id="jumpHello">인사해요</button>
-        <button class="btn btn--sm" type="button" id="meBtn">이름표 달기</button>
-      </div>
+      <button class="btn btn--sm" type="button" id="rulesBtn">활동 규칙</button>
+      <button class="btn btn--sm" type="button" id="jumpHello">인사해요</button>
+      <button class="btn btn--sm" type="button" id="meBtn">이름표 달기</button>
     </div>
 
     <div id="noticeSlot"></div>
@@ -465,14 +448,16 @@ dialog::backdrop{
         <div class="card-wrap" style="margin-bottom:var(--s5)" id="myStatsWrap" hidden>
           <details class="card panel" id="myStats" open>
             <summary class="panel-head">
-              <span class="stat-head"><span id="myStatsName"></span>님의 입덕 기록</span>
-              <span class="panel-mark" aria-hidden="true"></span>
+              <span class="panel-top">
+                <span class="stat-head"><span id="myStatsName"></span>님의 입덕 기록</span>
+                <span class="panel-mark" aria-hidden="true"></span>
+              </span>
+              <span class="stat-big">
+                <span class="n"><span class="lat" id="myDays">00</span></span>
+                <span class="u">일째 입덕 ing..</span>
+              </span>
             </summary>
             <div class="panel-body">
-              <div class="stat-big">
-                <span class="n"><span class="lat" id="myDays">0</span></span>
-                <span class="u">일째 입덕 중</span>
-              </div>
               <dl class="stat-grid" id="myStatList"></dl>
               <p class="t-meta" id="myStatNote"></p>
             </div>
@@ -882,9 +867,7 @@ const ERR={
   NICK_BANNED:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!',
   ADMIN_RESERVED:'범쨩은 예약된 이름이에요',
   NO_MEMBER:'그런 이름표는 없어요',
-  NO_PIN:'이 이름표엔 아직 비번이 없어요. 처음 쓰시던 기기에서 비번부터 정해주세요.',
   BAD_PIN:'비번이 안 맞아요',
-  PIN_EXISTS:'비번은 이미 정해져 있어요',
   PIN_FORMAT:'숫자로만 채워주세요',
   ADMIN_EXISTS:'범쨩은 이미 등록돼 있어요. 비번으로 들어오세요.',
   NOT_ADMIN:'범쨩만 할 수 있어요',
@@ -936,7 +919,7 @@ const ApiSupabase={
     try{ localStorage.setItem('udfc.token',p.token); }catch(e){}
     Me.nick=p.nick;
     Me.row={id:p.nickKey,nick:p.nick,nickKey:p.nickKey,joinedDay:kstDay(Date.parse(p.joinedAt)),
-            greetedAt:p.greetedAt?Date.parse(p.greetedAt):null,isAdmin:!!p.isAdmin,hasPin:!!p.hasPin};
+            greetedAt:p.greetedAt?Date.parse(p.greetedAt):null,isAdmin:!!p.isAdmin};
     return Me.row;
   },
   async refresh(){
@@ -967,16 +950,15 @@ const ApiSupabase={
     catch(e){ return null; }
   },
   join:async n=>Api._save(await SB.rpc('fc_join',{p_nick:n})),
-  login:async (n,pin)=>Api._save(await SB.rpc('fc_login',{p_nick:n,p_pin:pin})),
+  adminLogin:async pin=>Api._save(await SB.rpc('fc_admin_login',{p_pin:pin})),
   adminClaim:async pin=>Api._save(await SB.rpc('fc_admin_claim',{p_pin:pin})),
-  setPin(pin){ return SB.rpc('fc_set_pin',{p_token:this.token,p_pin:pin}).then(p=>this._save(p)); },
   greet(a){ return SB.rpc('fc_greet',{p_token:this.token,p_answers:a}).then(p=>this._save(p)); },
   createPost(b){ return SB.rpc('fc_create_post',{p_token:this.token,p_body:b}); },
-  editPost(id,b,pin){ return SB.rpc('fc_edit_post',{p_token:this.token,p_id:id,p_body:b,p_pin:pin}); },
-  deletePost(id,pin){ return SB.rpc('fc_delete_post',{p_token:this.token,p_id:id,p_pin:pin}); },
+  editPost(id,b){ return SB.rpc('fc_edit_post',{p_token:this.token,p_id:id,p_body:b}); },
+  deletePost(id){ return SB.rpc('fc_delete_post',{p_token:this.token,p_id:id}); },
   toggleLike(id){ return SB.rpc('fc_toggle_like',{p_token:this.token,p_post_id:id}); },
   createComment(pid,b){ return SB.rpc('fc_create_comment',{p_token:this.token,p_post_id:pid,p_body:b}); },
-  deleteComment(id,pin){ return SB.rpc('fc_delete_comment',{p_token:this.token,p_id:id,p_pin:pin}); },
+  deleteComment(id){ return SB.rpc('fc_delete_comment',{p_token:this.token,p_id:id}); },
   createQuestion(b){ return SB.rpc('fc_create_question',{p_token:this.token,p_body:b}); },
   report(t,id,why){ return SB.rpc('fc_report',{p_token:this.token,p_type:t,p_target:id,p_reason:why}); },
   hidePost(id,h,why){ return SB.rpc('fc_admin_hide_post',{p_token:this.token,p_id:id,p_hidden:h,p_reason:why}); },
@@ -996,8 +978,7 @@ const ApiSupabase={
 const ApiDoc={
   mode:'local', token:null,
   async init(){ this.mode=await Store.init(); return this.mode; },
-  _row(id,row){ Me.nick=row.nick;
-    Me.row=Object.assign({_id:id},row,{hasPin:!!row.pinHash}); return Me.row; },
+  _row(id,row){ Me.nick=row.nick; Me.row=Object.assign({_id:id},row); return Me.row; },
   async refresh(){ /* watch 가 알아서 채운다 */ },
   async restore(){
     let saved=null; try{ saved=localStorage.getItem(LS.nick); }catch(e){}
@@ -1011,15 +992,7 @@ const ApiDoc={
     if(await Store.get('members',id)) throw new Error('NICK_TAKEN');
     const now=Date.now();
     const row=await Store.set('members',id,{nick,nickKey:nickKey(nick),joinedAt:now,joinedDay:kstDay(now),
-      pinHash:null,greetedAt:null,isAdmin:false,lastQuestionDay:null,postCount:0,updatedAt:now});
-    try{ localStorage.setItem(LS.nick,nick); }catch(e){}
-    return this._row(id,row);
-  },
-  async login(nick,pin){
-    const id='m_'+nickId(nick), row=await Store.get('members',id);
-    if(!row) throw new Error('NO_MEMBER');
-    if(!row.pinHash) throw new Error('NO_PIN');
-    if(!await samePin(pin,nick,row.pinHash)) throw new Error('BAD_PIN');
+      greetedAt:null,isAdmin:false,lastQuestionDay:null,postCount:0,updatedAt:now});
     try{ localStorage.setItem(LS.nick,nick); }catch(e){}
     return this._row(id,row);
   },
@@ -1028,7 +1001,7 @@ const ApiDoc={
     if(await Store.get('members',id)) throw new Error('ADMIN_EXISTS');
     const now=Date.now();
     const row=await Store.set('members',id,{nick:ADMIN_NICK,nickKey:nickKey(ADMIN_NICK),joinedAt:now,
-      joinedDay:kstDay(now),pinHash:null,adminHash:await hashPin(pin,ADMIN_NICK),greetedAt:now,
+      joinedDay:kstDay(now),adminHash:await hashPin(pin,ADMIN_NICK),greetedAt:now,
       isAdmin:true,lastQuestionDay:null,postCount:0,updatedAt:now});
     try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
     return this._row(id,row);
@@ -1039,15 +1012,6 @@ const ApiDoc={
     if(!await samePin(pin,ADMIN_NICK,row.adminHash)) throw new Error('BAD_PIN');
     try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
     return this._row(id,row);
-  },
-  async setPin(pin){
-    const h=await hashPin(pin,Me.nick);
-    await Store.patch('members',Me.row._id,{pinHash:h,updatedAt:Date.now()});
-    Me.row.pinHash=h; Me.row.hasPin=true; return Me.row;
-  },
-  async checkPin(pin){
-    if(!Me.row.pinHash) throw new Error('NO_PIN');
-    if(!await samePin(pin,Me.nick,Me.row.pinHash)) throw new Error('BAD_PIN');
   },
   async greet(answers){
     const mine=DB.greetings.find(g=>g.nickKey===Me.key), now=Date.now();
@@ -1066,12 +1030,13 @@ const ApiDoc={
       likeCount:0,commentCount:0,pinned:false,hidden:false,hiddenReason:null,reportCount:0});
     return id;
   },
-  async editPost(id,body,pin){ await this.checkPin(pin);
-    await Store.patch('posts',id,{body,editedAt:Date.now()}); },
-  async deletePost(id,pin){
+  async editPost(id,body){
     const p=DB.posts.find(x=>x.id===id); if(!p) throw new Error('NOT_FOUND');
-    if(p.nickKey===Me.key) await this.checkPin(pin);
-    else if(!Me.row.isAdmin) throw new Error('NOT_MINE');
+    if(p.nickKey!==Me.key) throw new Error('NOT_MINE');
+    await Store.patch('posts',id,{body,editedAt:Date.now()}); },
+  async deletePost(id){
+    const p=DB.posts.find(x=>x.id===id); if(!p) throw new Error('NOT_FOUND');
+    if(p.nickKey!==Me.key && !Me.row.isAdmin) throw new Error('NOT_MINE');
     for(const c of DB.comments.filter(c=>c.postId===id)) await Store.del('comments',c._id);
     for(const l of DB.likes.filter(l=>l.postId===id)) await Store.del('likes',l._id);
     await Store.del('posts',id);
@@ -1091,10 +1056,9 @@ const ApiDoc={
       {postId,nick:Me.nick,nickKey:Me.key,body,createdAt:now,hidden:false,reportCount:0});
     await Store.patch('posts',postId,{commentCount:DB.comments.filter(x=>x.postId===postId).length+1}).catch(()=>{});
   },
-  async deleteComment(id,pin){
+  async deleteComment(id){
     const c=DB.comments.find(x=>x._id===id); if(!c) throw new Error('NOT_FOUND');
-    if(c.nickKey===Me.key) await this.checkPin(pin);
-    else if(!Me.row.isAdmin) throw new Error('NOT_MINE');
+    if(c.nickKey!==Me.key && !Me.row.isAdmin) throw new Error('NOT_MINE');
     await Store.del('comments',id);
     await Store.patch('posts',c.postId,{commentCount:DB.comments.filter(x=>x.postId===c.postId).length-1}).catch(()=>{});
   },
@@ -1461,8 +1425,8 @@ function renderMyStats(){
   const wrap=$('#myStatsWrap');
   if(!Me.row){ wrap.hidden=true; return; }
   wrap.hidden=false;
-  $('#myStatsName').textContent=Me.nick;
-  $('#myDays').textContent=String(Me.days);
+  $('#myStatsName').textContent=Me.nick+(Me.state==='admin'?' (범쨩)':'');
+  $('#myDays').textContent=String(Me.days).padStart(2,'0');
 
   const mine=DB.posts.filter(p=>p.nickKey===Me.key);
   const mineIds=new Set(mine.map(p=>String(p.id)));
@@ -1506,14 +1470,7 @@ function renderStats(){
   });
 }
 function renderMe(){
-  const chip=$('#dayChip'), me=$('#meChip'), btn=$('#meBtn');
-  if(Me.row){
-    chip.hidden=false; $('#dayNum').textContent=String(Me.days).padStart(2,'0');
-    me.hidden=false;
-    me.innerHTML=`<span class="nick">${esc(Me.nick)}</span>`
-      +(Me.state==='admin'?'<span class="badge badge--admin">범쨩</span>':'');
-    btn.textContent='로그아웃';
-  }else{ chip.hidden=true; me.hidden=true; btn.textContent='이름표 달기'; }
+  $('#meBtn').textContent = Me.row ? '로그아웃' : '이름표 달기';
   $('#adminCard').hidden=!Me.can('moderate');
   renderMyStats();
 }
@@ -1530,35 +1487,6 @@ async function needFull(gateMsg){
   if(Me.can('post')) return true;
   toast(gateMsg||GATE.member);
   return await openGreet();
-}
-/** PIN 을 받아서 돌려준다. 맞는지는 백엔드가 본다 (Supabase 에서는 서버에서). */
-async function askPin(){
-  if(!Me.row) return null;
-  if(!Me.row.hasPin){
-    const a=await pinBox(4,{title:'비밀번호 정하기',
-      desc:'쓰신 글이랑 댓글을 나중에 고치거나 지울 때, 그리고 다른 기기에서 돌아올 때 쓰는 번호예요. 숫자 4자리.',
-      warn:'복구가 안 되니 꼭 기억해두세요.',okLabel:'저장'});
-    if(!a||a.length<4) return null;
-    try{ await Api.setPin(a); toast('비번 저장 완료. 잊지 마세요, 복구가 안 돼요.','good'); return a; }
-    catch(e){ toast(errMsg(e),'bad'); return null; }
-  }
-  const lk=lockGet('pin');
-  if(lk.until>Date.now()){ toast('3번 틀리셨으니 잠깐 냉탕 다녀오시죠. 5분 뒤에 다시.','bad'); return null; }
-  const a=await pinBox(4,{title:'비밀번호 확인',desc:'본인 확인용이에요. 정하셨던 4자리를 넣어주세요.'});
-  return (a&&a.length===4)?a:null;
-}
-/** PIN 이 필요한 동작을 감싼다. 틀리면 다시 묻고, 세 번이면 잠근다. */
-async function withPin(run){
-  for(;;){
-    const pin=await askPin(); if(!pin) return false;
-    try{ await run(pin); lockClear('pin'); return true; }
-    catch(e){
-      if(String(e&&e.message)!=='BAD_PIN'){ toast(errMsg(e),'bad'); return false; }
-      const l=lockHit('pin',TRIES,PIN_LOCK);
-      if(l.until>Date.now()){ toast('3번 틀리셨으니 잠깐 냉탕 다녀오시죠. 5분 뒤에 다시.','bad'); return false; }
-      toast('비번이 안 맞아요. 남은 시도 '+(TRIES-l.tries)+'번.','bad');
-    }
-  }
 }
 /** Supabase 는 폴링이라 쓰기 직후 한 번 당겨온다. 문서 저장소는 watch 가 한다. */
 async function reload(){ if(Api.mode==='supabase'){ try{ await Api.refresh(); renderAll(); }catch(e){} } }
@@ -1602,7 +1530,7 @@ async function adminGate(){
     const a=await pinBox(8,{title:'범쨩 확인',desc:'범쨩 비밀번호 8자리를 넣어주세요.'});
     if(!a) return false;
     try{
-      if(Api.mode==='supabase') await Api.login(ADMIN_NICK,a); else await Api.adminLogin(a);
+      await Api.adminLogin(a);
       lockClear('admin'); toast('범쨩 출근!','good'); await reload(); renderAll(); return true;
     }catch(e){
       if(String(e.message)!=='BAD_PIN'){ toast(errMsg(e),'bad'); return false; }
@@ -1673,7 +1601,8 @@ $('#dlgPost').addEventListener('close',async function(){
   if(!body){toast('내용을 써주셔야 올라가요.','bad');return;}
   if(body.length>LIM.POST){toast('500자가 한계예요. (현재 '+body.length+'자)','bad');return;}
   if(target){
-    if(await withPin(pin=>Api.editPost(target.id,body,pin))){ toast('고쳐졌어요','good'); await reload(); }
+    try{ await Api.editPost(target.id,body); toast('고쳐졌어요','good'); await reload(); }
+    catch(e){ toast(errMsg(e),'bad'); }
   }else{
     try{ await Api.createPost(body); toast('주접 접수 완료!','good'); await reload(); }
     catch(e){ toast(errMsg(e),'bad'); }
@@ -1681,7 +1610,8 @@ $('#dlgPost').addEventListener('close',async function(){
 });
 async function removePost(p){
   if(!await confirmBox('주접 지우기','지우면 댓글도 같이 사라져요. 진짜 지울까요?','지울래요','그냥 둘래요')) return;
-  if(await withPin(pin=>Api.deletePost(p.id,pin))){ toast('내려갔습니다','good'); await reload(); }
+  try{ await Api.deletePost(p.id); toast('내려갔습니다','good'); await reload(); }
+  catch(e){ toast(errMsg(e),'bad'); }
 }
 async function hidePost(p){
   try{
@@ -1760,10 +1690,9 @@ function drawDetail(){
       d.style.marginTop='var(--s2)';
       d.addEventListener('click',async()=>{
         if(!await confirmBox('댓글 지우기','이 댓글 지울까요?','네','아니요')) return;
-        const run=pin=>Api.deleteComment(c._id,pin);
-        const ok = c.nickKey===Me.key ? await withPin(run)
-                 : await run(null).then(()=>true).catch(e=>{toast(errMsg(e),'bad');return false;});
-        if(ok){ toast('댓글 내려갔어요','good'); await reload(); drawDetail(); }
+        try{ await Api.deleteComment(c._id); toast('댓글 내려갔어요','good');
+             await reload(); drawDetail(); }
+        catch(e){ toast(errMsg(e),'bad'); }
       });
       w.appendChild(d);
     }

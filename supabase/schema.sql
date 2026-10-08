@@ -18,7 +18,7 @@ create table if not exists fc_members (
   nick        text        not null,
   nick_key    text        not null unique,
   token       uuid        not null default gen_random_uuid() unique,
-  pin_hash    text,
+  admin_hash  text,        -- 범쨩 8자리만. 일반 회원은 비워둔다
   joined_at   timestamptz not null default now(),
   greeted_at  timestamptz,
   is_admin    boolean     not null default false,
@@ -101,6 +101,33 @@ create table if not exists fc_reports (
   unique (member_id, target_type, target_id)
 );
 
+-- --------------------------------------------- 예전 버전 정리 --
+-- 뷰와 함수의 모양이 바뀌었으므로 먼저 내린다. 스크립트를 다시 돌려도
+-- 깨지지 않게 하려는 것이고, 테이블의 데이터는 건드리지 않는다.
+drop view if exists v_members, v_posts, v_comments, v_likes,
+                    v_greetings, v_questions, v_notice, v_links cascade;
+drop function if exists fc_edit_post(uuid,bigint,text,text);
+drop function if exists fc_delete_post(uuid,bigint,text);
+drop function if exists fc_delete_comment(uuid,bigint,text);
+drop function if exists fc_set_pin(uuid,text);
+drop function if exists fc_login(text,text);
+drop function if exists fc_admin_login(text);
+drop function if exists fc_check_pin(fc_members,text);
+drop function if exists fc_profile(fc_members);
+-- 회원 비밀번호는 쓰지 않는다. 신원은 이름표를 달 때 받은 토큰이 증명한다.
+-- 범쨩 8자리만 남기고, 예전 칼럼에 들어 있던 값은 옮긴 뒤 칼럼을 내린다.
+alter table fc_members add column if not exists admin_hash text;
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='fc_members'
+                and column_name='pin_hash') then
+    execute 'update fc_members set admin_hash = pin_hash
+              where is_admin and admin_hash is null';
+  end if;
+end $$;
+alter table fc_members drop column if exists pin_hash;
+
 -- --------------------------------------------------------------- 잠그기 --
 -- 정책을 하나도 만들지 않는다. RLS가 켜져 있고 정책이 없으면 바깥에서는
 -- 읽기도 쓰기도 전부 막힌다. 아래 뷰와 함수만이 유일한 통로다.
@@ -117,12 +144,11 @@ alter table fc_reports enable row level security;
 -- ------------------------------------------------------------------ 뷰 --
 -- 뷰는 소유자 권한으로 돌아서 RLS를 통과한다. 그래서 여기 적은 컬럼만,
 -- 적은 모양 그대로 바깥에 나간다. token 과 pin_hash 는 어디에도 없다.
-create or replace view v_members as
-  select m.id, m.nick, m.nick_key, m.joined_at, m.greeted_at, m.is_admin,
-         (m.pin_hash is not null) as has_pin
+create view v_members as
+  select m.id, m.nick, m.nick_key, m.joined_at, m.greeted_at, m.is_admin
   from fc_members m where not m.banned;
 
-create or replace view v_posts as
+create view v_posts as
   select p.id, m.nick, m.nick_key,
          case when p.hidden then null else p.body end as body,
          p.created_at, p.edited_at, p.pinned, p.hidden, p.hidden_reason,
@@ -131,27 +157,27 @@ create or replace view v_posts as
   from fc_posts p join fc_members m on m.id = p.member_id
   where not m.banned;
 
-create or replace view v_comments as
+create view v_comments as
   select c.id, c.post_id, m.nick, m.nick_key,
          case when c.hidden then null else c.body end as body,
          c.created_at, c.hidden
   from fc_comments c join fc_members m on m.id = c.member_id
   where not m.banned;
 
-create or replace view v_likes as
+create view v_likes as
   select l.post_id, m.nick_key from fc_likes l join fc_members m on m.id = l.member_id;
 
-create or replace view v_greetings as
+create view v_greetings as
   select g.member_id, m.nick, m.nick_key, g.answers, g.created_at, g.edited_at
   from fc_greetings g join fc_members m on m.id = g.member_id
   where not g.hidden and not m.banned;
 
-create or replace view v_questions as
+create view v_questions as
   select q.id, m.nick, m.nick_key, q.day, q.body, q.created_at, q.answer, q.answered_at
   from fc_questions q join fc_members m on m.id = q.member_id
   where not q.hidden and not m.banned;
 
-create or replace view v_notice as select id, body, active, updated_at from fc_notices;
+create view v_notice as select id, body, active, updated_at from fc_notices;
 create or replace view v_links  as select id, urls, updated_at from fc_links;
 
 -- ------------------------------------------------------------------ 함수 --
@@ -175,11 +201,10 @@ returns text language sql immutable as $$
   select lower(regexp_replace(btrim(p_nick), '\s+', '', 'g'))
 $$;
 
-create or replace function fc_profile(v fc_members)
+create function fc_profile(v fc_members)
 returns json language sql stable as $$
   select json_build_object('token', v.token, 'nick', v.nick, 'nickKey', v.nick_key,
-    'joinedAt', v.joined_at, 'greetedAt', v.greeted_at, 'isAdmin', v.is_admin,
-    'hasPin', v.pin_hash is not null)
+    'joinedAt', v.joined_at, 'greetedAt', v.greeted_at, 'isAdmin', v.is_admin)
 $$;
 
 -- 이름표 달기 ------------------------------------------------------------
@@ -199,46 +224,12 @@ begin
 exception when unique_violation then raise exception 'NICK_TAKEN';
 end $$;
 
--- 다른 기기에서 돌아오기 (PIN 이 진짜로 하는 일) --------------------------
-create or replace function fc_login(p_nick text, p_pin text)
-returns json language plpgsql security definer
-set search_path = public, extensions as $$
-declare v fc_members;
-begin
-  select * into v from fc_members where nick_key = fc_norm(p_nick);
-  if v.id is null      then raise exception 'NO_MEMBER'; end if;
-  if v.banned          then raise exception 'BANNED'; end if;
-  if v.pin_hash is null then raise exception 'NO_PIN'; end if;
-  if v.pin_hash <> crypt(p_pin, v.pin_hash) then raise exception 'BAD_PIN'; end if;
-  return fc_profile(v);
-end $$;
-
 -- 이 기기에 남은 토큰으로 세션 복구 --------------------------------------
 create or replace function fc_login_by_token(p_token uuid)
 returns json language plpgsql stable security definer
 set search_path = public, extensions as $$
 declare v fc_members;
 begin v := fc_auth(p_token); return fc_profile(v); end $$;
-
-create or replace function fc_set_pin(p_token uuid, p_pin text)
-returns json language plpgsql security definer
-set search_path = public, extensions as $$
-declare v fc_members;
-begin
-  v := fc_auth(p_token);
-  if p_pin !~ '^\d{4}$' then raise exception 'PIN_FORMAT'; end if;
-  if v.pin_hash is not null then raise exception 'PIN_EXISTS'; end if;
-  update fc_members set pin_hash = crypt(p_pin, gen_salt('bf', 10)) where id = v.id
-    returning * into v;
-  return fc_profile(v);
-end $$;
-
-create or replace function fc_check_pin(v fc_members, p_pin text)
-returns void language plpgsql as $$
-begin
-  if v.pin_hash is null then raise exception 'NO_PIN'; end if;
-  if v.pin_hash <> crypt(p_pin, v.pin_hash) then raise exception 'BAD_PIN'; end if;
-end $$;
 
 -- 범쨩 ------------------------------------------------------------------
 create or replace function fc_admin_claim(p_pin text)
@@ -249,9 +240,22 @@ begin
   if p_pin !~ '^\d{8}$' then raise exception 'PIN_FORMAT'; end if;
   select * into v from fc_members where nick_key = fc_norm('범쨩');
   if v.id is not null then raise exception 'ADMIN_EXISTS'; end if;
-  insert into fc_members (nick, nick_key, pin_hash, is_admin, greeted_at)
+  insert into fc_members (nick, nick_key, admin_hash, is_admin, greeted_at)
   values ('범쨩', fc_norm('범쨩'), crypt(p_pin, gen_salt('bf', 10)), true, now())
   returning * into v;
+  return fc_profile(v);
+end $$;
+
+-- 범쨩으로 들어오기. 8자리는 bcrypt 로 서버에서만 비교한다.
+create or replace function fc_admin_login(p_pin text)
+returns json language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members;
+begin
+  select * into v from fc_members where nick_key = fc_norm('범쨩');
+  if v.id is null          then raise exception 'NO_MEMBER'; end if;
+  if v.admin_hash is null  then raise exception 'NO_MEMBER'; end if;
+  if v.admin_hash <> crypt(p_pin, v.admin_hash) then raise exception 'BAD_PIN'; end if;
   return fc_profile(v);
 end $$;
 
@@ -295,19 +299,8 @@ begin
   return new_id;
 end $$;
 
-create or replace function fc_edit_post(p_token uuid, p_id bigint, p_body text, p_pin text)
-returns void language plpgsql security definer
-set search_path = public, extensions as $$
-declare v fc_members; owner bigint;
-begin
-  v := fc_auth(p_token); perform fc_check_pin(v, p_pin);
-  select member_id into owner from fc_posts where id = p_id;
-  if owner is null    then raise exception 'NOT_FOUND'; end if;
-  if owner <> v.id    then raise exception 'NOT_MINE'; end if;
-  update fc_posts set body = btrim(p_body), edited_at = now() where id = p_id;
-end $$;
-
-create or replace function fc_delete_post(p_token uuid, p_id bigint, p_pin text)
+-- 고치기는 본인만. 범쨩도 남의 글은 못 고친다 (지우거나 숨기는 것까지만).
+create or replace function fc_edit_post(p_token uuid, p_id bigint, p_body text)
 returns void language plpgsql security definer
 set search_path = public, extensions as $$
 declare v fc_members; owner bigint;
@@ -315,8 +308,19 @@ begin
   v := fc_auth(p_token);
   select member_id into owner from fc_posts where id = p_id;
   if owner is null then raise exception 'NOT_FOUND'; end if;
-  if owner = v.id then perform fc_check_pin(v, p_pin);
-  elsif not v.is_admin then raise exception 'NOT_MINE'; end if;
+  if owner <> v.id then raise exception 'NOT_MINE'; end if;
+  update fc_posts set body = btrim(p_body), edited_at = now() where id = p_id;
+end $$;
+
+create or replace function fc_delete_post(p_token uuid, p_id bigint)
+returns void language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members; owner bigint;
+begin
+  v := fc_auth(p_token);
+  select member_id into owner from fc_posts where id = p_id;
+  if owner is null then raise exception 'NOT_FOUND'; end if;
+  if owner <> v.id and not v.is_admin then raise exception 'NOT_MINE'; end if;
   delete from fc_posts where id = p_id;   -- 댓글·공감은 on delete cascade 로 같이 내려감
 end $$;
 
@@ -348,7 +352,7 @@ begin
   return new_id;
 end $$;
 
-create or replace function fc_delete_comment(p_token uuid, p_id bigint, p_pin text)
+create or replace function fc_delete_comment(p_token uuid, p_id bigint)
 returns void language plpgsql security definer
 set search_path = public, extensions as $$
 declare v fc_members; owner bigint;
@@ -356,8 +360,7 @@ begin
   v := fc_auth(p_token);
   select member_id into owner from fc_comments where id = p_id;
   if owner is null then raise exception 'NOT_FOUND'; end if;
-  if owner = v.id then perform fc_check_pin(v, p_pin);
-  elsif not v.is_admin then raise exception 'NOT_MINE'; end if;
+  if owner <> v.id and not v.is_admin then raise exception 'NOT_MINE'; end if;
   delete from fc_comments where id = p_id;
 end $$;
 
@@ -461,22 +464,20 @@ revoke all on fc_members, fc_posts, fc_comments, fc_likes, fc_greetings,
               fc_questions, fc_notices, fc_links, fc_reports from anon, authenticated;
 
 -- 내부용 보조 함수는 바깥에 노출하지 않는다
-revoke all on function fc_auth(uuid), fc_need_admin(uuid),
-                       fc_check_pin(fc_members, text), fc_profile(fc_members)
+revoke all on function fc_auth(uuid), fc_need_admin(uuid), fc_profile(fc_members)
        from anon, authenticated, public;
 
 grant execute on function fc_join(text) to anon, authenticated;
-grant execute on function fc_login(text,text) to anon, authenticated;
 grant execute on function fc_login_by_token(uuid) to anon, authenticated;
-grant execute on function fc_set_pin(uuid,text) to anon, authenticated;
 grant execute on function fc_admin_claim(text) to anon, authenticated;
+grant execute on function fc_admin_login(text) to anon, authenticated;
 grant execute on function fc_greet(uuid,jsonb) to anon, authenticated;
 grant execute on function fc_create_post(uuid,text) to anon, authenticated;
-grant execute on function fc_edit_post(uuid,bigint,text,text) to anon, authenticated;
-grant execute on function fc_delete_post(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_edit_post(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_delete_post(uuid,bigint) to anon, authenticated;
 grant execute on function fc_toggle_like(uuid,bigint) to anon, authenticated;
 grant execute on function fc_create_comment(uuid,bigint,text) to anon, authenticated;
-grant execute on function fc_delete_comment(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_delete_comment(uuid,bigint) to anon, authenticated;
 grant execute on function fc_create_question(uuid,text) to anon, authenticated;
 grant execute on function fc_report(uuid,text,bigint,text) to anon, authenticated;
 grant execute on function fc_admin_hide_post(uuid,bigint,boolean,text) to anon, authenticated;
