@@ -73,11 +73,17 @@ const SUPABASE={
 
 ---
 
-## 범쨩 계정
+## 운영자 계정
+
+운영자 이름은 **`범쨩`과 `빵야`** 두 자리입니다. 각자 자기 8자리를 따로 정하고,
+서로의 비번으로는 들어갈 수 없습니다. 일반 가입으로는 이 두 이름을 쓸 수 없어요.
+
+운영자를 늘리거나 바꾸려면 스키마의 `fc_admin_nicks()` 한 줄만 고치면 되고,
+페이지 쪽 `ADMIN_NICKS` 도 같이 맞춰주세요.
 
 처음 한 번만 하면 됩니다.
 
-1. 페이지에서 **이름표 달기** → 닉네임에 `범쨩` 입력
+1. 페이지에서 **이름표 달기** → 닉네임에 `범쨩` 또는 `빵야` 입력
 2. 8자리 숫자를 정하고 한 번 더 확인 → 등록 완료
 3. 그 뒤로는 같은 방법으로 들어가면 8자리를 물어봅니다
 
@@ -86,8 +92,8 @@ const SUPABASE={
 
 ```sql
 update fc_members
-   set pin_hash = extensions.crypt('새8자리', extensions.gen_salt('bf', 10))
- where nick_key = '범쨩';
+   set admin_hash = extensions.crypt('새8자리', extensions.gen_salt('bf', 10))
+ where nick_key = '범쨩';   -- 또는 '빵야'
 ```
 
 ---
@@ -300,6 +306,7 @@ drop function if exists fc_delete_comment(uuid,bigint,text);
 drop function if exists fc_set_pin(uuid,text);
 drop function if exists fc_login(text,text);
 drop function if exists fc_admin_login(text);
+drop function if exists fc_admin_claim(text);
 drop function if exists fc_check_pin(fc_members,text);
 drop function if exists fc_profile(fc_members);
 drop function if exists fc_admin_reports(uuid);
@@ -406,6 +413,16 @@ returns json language sql stable as $$
     'bannedUntil', case when v.banned_until > now() then v.banned_until end)
 $$;
 
+-- 운영자로 예약된 이름들. 여기 적힌 이름은 일반 가입이 막히고,
+-- 각자 자기 8자리로 처음 한 번 등록한 뒤 그 번호로 들어온다.
+create or replace function fc_admin_nicks()
+returns text[] language sql immutable as $$ select array['범쨩','빵야'] $$;
+
+create or replace function fc_is_admin_nick(p_key text)
+returns boolean language sql stable as $$
+  select exists (select 1 from unnest(fc_admin_nicks()) n where fc_norm(n) = p_key)
+$$;
+
 -- 이름표 달기 ------------------------------------------------------------
 create or replace function fc_join(p_nick text, p_pin text)
 returns json language plpgsql security definer
@@ -416,7 +433,7 @@ begin
   if char_length(n) < 2 or char_length(n) > 12 then raise exception 'NICK_LEN'; end if;
   if p_pin !~ '^\d{4}$' then raise exception 'PIN_FORMAT'; end if;
   if n !~ '^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9._-]+$'                then raise exception 'NICK_CHARS'; end if;
-  if k = fc_norm('범쨩')                                     then raise exception 'ADMIN_RESERVED'; end if;
+  if fc_is_admin_nick(k)                                     then raise exception 'ADMIN_RESERVED'; end if;
   if k = any (array['관리자','운영자','어드민','admin','사장님','금샘탕','사우나범','범짱'])
                                                              then raise exception 'NICK_BANNED'; end if;
   insert into fc_members (nick, nick_key, pin_hash)
@@ -487,27 +504,29 @@ begin
 end $$;
 
 -- 범쨩 ------------------------------------------------------------------
-create or replace function fc_admin_claim(p_pin text)
+create or replace function fc_admin_claim(p_nick text, p_pin text)
 returns json language plpgsql security definer
 set search_path = public, extensions as $$
-declare v fc_members;
+declare v fc_members; k text;
 begin
-  if p_pin !~ '^\d{8}$' then raise exception 'PIN_FORMAT'; end if;
-  select * into v from fc_members where nick_key = fc_norm('범쨩');
+  k := fc_norm(p_nick);
+  if not fc_is_admin_nick(k) then raise exception 'NOT_ADMIN'; end if;
+  if p_pin !~ '^\d{8}$'      then raise exception 'PIN_FORMAT'; end if;
+  select * into v from fc_members where nick_key = k;
   if v.id is not null then raise exception 'ADMIN_EXISTS'; end if;
   insert into fc_members (nick, nick_key, admin_hash, is_admin, greeted_at)
-  values ('범쨩', fc_norm('범쨩'), crypt(p_pin, gen_salt('bf', 10)), true, now())
+  values (btrim(p_nick), k, crypt(p_pin, gen_salt('bf', 10)), true, now())
   returning * into v;
   return fc_profile(v);
 end $$;
 
 -- 범쨩으로 들어오기. 8자리는 bcrypt 로 서버에서만 비교한다.
-create or replace function fc_admin_login(p_pin text)
+create or replace function fc_admin_login(p_nick text, p_pin text)
 returns json language plpgsql security definer
 set search_path = public, extensions as $$
 declare v fc_members;
 begin
-  select * into v from fc_members where nick_key = fc_norm('범쨩');
+  select * into v from fc_members where nick_key = fc_norm(p_nick);
   if v.id is null          then raise exception 'NO_MEMBER'; end if;
   if v.admin_hash is null  then raise exception 'NO_MEMBER'; end if;
   if v.admin_hash <> crypt(p_pin, v.admin_hash) then raise exception 'BAD_PIN'; end if;
@@ -802,8 +821,8 @@ grant execute on function fc_login(text,text) to anon, authenticated;
 grant execute on function fc_set_pin(uuid,text) to anon, authenticated;
 grant execute on function fc_change_pin(uuid,text,text) to anon, authenticated;
 grant execute on function fc_login_by_token(uuid) to anon, authenticated;
-grant execute on function fc_admin_claim(text) to anon, authenticated;
-grant execute on function fc_admin_login(text) to anon, authenticated;
+grant execute on function fc_admin_claim(text,text) to anon, authenticated;
+grant execute on function fc_admin_login(text,text) to anon, authenticated;
 grant execute on function fc_greet(uuid,jsonb) to anon, authenticated;
 grant execute on function fc_create_post(uuid,text) to anon, authenticated;
 grant execute on function fc_edit_post(uuid,bigint,text) to anon, authenticated;

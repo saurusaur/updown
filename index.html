@@ -571,7 +571,7 @@ dialog::backdrop{
         </div>
         <div class="card-wrap">
           <div class="card" id="adminCard" hidden>
-            <h3 style="font:400 var(--t-h3)/1.3 var(--font-head);margin-bottom:var(--s2)">범쨩 패널</h3>
+            <h3 style="font:400 var(--t-h3)/1.3 var(--font-head);margin-bottom:var(--s2)">운영 패널</h3>
             <div class="stack" style="gap:var(--s2)">
               <button class="btn btn--sm" type="button" id="noticeBtn">공지 올리기</button>
               <button class="btn btn--sm" type="button" id="reportBtn">신고함 열기</button>
@@ -789,7 +789,8 @@ const LIM={POST:500,COMMENT:200,GREET:200,Q:200,NICK_MIN:2,NICK_MAX:12,Q_MIN:5,P
 const POST_COOLDOWN=60*1000, PAGE=20;
 const TRIES=3, PIN_LOCK=5*60*1000, ADMIN_LOCK=10*60*1000;
 const LS={nick:'udfc.nick',lock:'udfc.lock',data:'udfc.data'};
-const ADMIN_NICK='범쨩';
+const ADMIN_NICKS=['범쨩','빵야'];
+const isAdminNick=t=>ADMIN_NICKS.some(a=>nickKey(a)===nickKey(t));
 const BANNED=['관리자','운영자','어드민','admin','사장님','금샘탕','사우나범','범짱'];
 
 /* --- 시간: 전부 KST 기준 --------------------------------------- */
@@ -831,7 +832,7 @@ function checkNick(raw){
   if(t.length<LIM.NICK_MIN) return{err:'두 글자는 넘겨주세요'};
   if(t.length>LIM.NICK_MAX) return{err:'열두 글자가 한계예요. 줄여주실 수 있죠?'};
   if(!/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9._-]+$/.test(t)) return{err:'한글, 영문, 숫자랑 . _ - 만 쓸 수 있어요.'};
-  if(nickKey(t)===nickKey(ADMIN_NICK)) return{admin:true,nick:ADMIN_NICK};
+  if(isAdminNick(t)) return{admin:true,nick:ADMIN_NICKS.find(a=>nickKey(a)===nickKey(t))};
   if(BANNED.some(b=>nickKey(t)===nickKey(b))) return{err:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!'};
   return{nick:t};
 }
@@ -970,19 +971,19 @@ const ERR={
   NICK_LEN:'이름은 두 글자에서 열두 글자 사이로 해주세요.',
   NICK_CHARS:'한글, 영문, 숫자와 . _ - 만 쓸 수 있어요.',
   NICK_BANNED:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!',
-  ADMIN_RESERVED:'범쨩은 예약된 이름이에요.',
+  ADMIN_RESERVED:'그 이름은 운영자용으로 예약돼 있어요.',
   NO_MEMBER:'그런 이름표는 없어요.',
   BAD_PIN:'비번이 맞지 않아요.',
   PIN_FORMAT:'숫자로만 넣어주세요.',
-  ADMIN_EXISTS:'범쨩은 이미 등록돼 있어요. 비번으로 들어오세요.',
-  NOT_ADMIN:'범쨩만 할 수 있어요.',
+  ADMIN_EXISTS:'이미 등록된 운영자예요. 비번으로 들어오세요.',
+  NOT_ADMIN:'운영자만 할 수 있어요.',
   NOT_MINE:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 범쨩이 확인합니다.',
   NEED_GREET:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
   COOLDOWN:'조금만 쉬었다 가요. 1분 뒤에 다시 쓰실 수 있어요.',
   DAILY_LIMIT:'오늘 질문은 이미 한 장 쓰셨어요. 자정이 지나면 새로 한 장 드려요.',
   NO_SESSION:'이름표가 풀렸어요. 다시 달아주세요.',
   BANNED:'지금은 냉탕에 계십니다. 차단이 풀리면 다시 쓰실 수 있어요.',
-  NOT_YOURSELF:'범쨩은 자기 자신을 차단할 수 없어요.',
+  NOT_YOURSELF:'운영자는 차단할 수 없어요.',
   GREET_SHORT:'앞의 두 개만 채워주시면 돼요. 정말 두 줄이면 끝납니다.',
   NOT_FOUND:'이미 사라진 글이에요.',
 };
@@ -1059,8 +1060,8 @@ const ApiSupabase={
   },
   join:async (n,pin)=>Api._save(await SB.rpc('fc_join',{p_nick:n,p_pin:pin})),
   login:async (n,pin)=>Api._save(await SB.rpc('fc_login',{p_nick:n,p_pin:pin})),
-  adminLogin:async pin=>Api._save(await SB.rpc('fc_admin_login',{p_pin:pin})),
-  adminClaim:async pin=>Api._save(await SB.rpc('fc_admin_claim',{p_pin:pin})),
+  adminLogin:async (nick,pin)=>Api._save(await SB.rpc('fc_admin_login',{p_nick:nick,p_pin:pin})),
+  adminClaim:async (nick,pin)=>Api._save(await SB.rpc('fc_admin_claim',{p_nick:nick,p_pin:pin})),
   changePin(o,nw){ return SB.rpc('fc_change_pin',{p_token:this.token,p_old:o,p_new:nw}); },
   greet(a){ return SB.rpc('fc_greet',{p_token:this.token,p_answers:a}).then(p=>this._save(p)); },
   createPost(b){ return SB.rpc('fc_create_post',{p_token:this.token,p_body:b}); },
@@ -1125,30 +1126,31 @@ const ApiDoc={
     try{ localStorage.setItem(LS.nick,nick); }catch(e){}
     return this._row(id,row);
   },
-  async adminClaim(pin){
-    const id='m_'+nickId(ADMIN_NICK);
+  async adminClaim(nick,pin){
+    if(!isAdminNick(nick)) throw new Error('NOT_ADMIN');
+    const id='m_'+nickId(nick);
     if(await Store.get('members',id)) throw new Error('ADMIN_EXISTS');
     const now=Date.now();
-    const row=await Store.set('members',id,{nick:ADMIN_NICK,nickKey:nickKey(ADMIN_NICK),joinedAt:now,
-      joinedDay:kstDay(now),adminHash:await hashPin(pin,ADMIN_NICK),greetedAt:now,
+    const row=await Store.set('members',id,{nick,nickKey:nickKey(nick),joinedAt:now,
+      joinedDay:kstDay(now),adminHash:await hashPin(pin,nick),greetedAt:now,
       isAdmin:true,lastQuestionDay:null,postCount:0,updatedAt:now});
-    try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
+    try{ localStorage.setItem(LS.nick,nick); }catch(e){}
     return this._row(id,row);
   },
-  async adminLogin(pin){
-    const id='m_'+nickId(ADMIN_NICK), row=await Store.get('members',id);
+  async adminLogin(nick,pin){
+    const id='m_'+nickId(nick), row=await Store.get('members',id);
     if(!row) throw new Error('NO_MEMBER');
-    if(!await samePin(pin,ADMIN_NICK,row.adminHash)) throw new Error('BAD_PIN');
-    try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
+    if(!await samePin(pin,nick,row.adminHash)) throw new Error('BAD_PIN');
+    try{ localStorage.setItem(LS.nick,nick); }catch(e){}
     return this._row(id,row);
   },
   async changePin(oldPin,newPin){
     const admin=!!Me.row.isAdmin;
     const cur=admin?Me.row.adminHash:Me.row.pinHash;
     if(!cur) throw new Error('NO_PIN');
-    if(!await samePin(oldPin, admin?ADMIN_NICK:Me.nick, cur)) throw new Error('BAD_PIN');
+    if(!await samePin(oldPin, Me.nick, cur)) throw new Error('BAD_PIN');
     if(!new RegExp(admin?'^\\d{8}$':'^\\d{4}$').test(newPin)) throw new Error('PIN_FORMAT');
-    const h=await hashPin(newPin, admin?ADMIN_NICK:Me.nick);
+    const h=await hashPin(newPin, Me.nick);
     await Store.patch('members',Me.row._id, admin?{adminHash:h}:{pinHash:h});
     Me.row[admin?'adminHash':'pinHash']=h;
   },
@@ -1701,7 +1703,7 @@ function openNick(){
       if(d.returnValue!=='ok') return res(false);
       const v=checkNick(inp.value);
       if(v.err) return again(v.err);
-      if(v.admin){ return res(await adminGate()); }
+      if(v.admin){ return res(await adminGate(v.nick)); }
       const p=pin.value.trim();
       if(!/^\d{4}$/.test(p)) return again('비밀번호는 숫자 네 자리로 해주세요.');
       try{
@@ -1725,32 +1727,32 @@ function openNick(){
 }
 /** 범쨩은 예약어다. 처음이면 8자리를 정하고, 그 다음부터는 그 번호로 들어온다.
     비번을 코드에 두지 않는 이유 — 소스를 열면 누구나 보이니까. */
-async function adminGate(){
+async function adminGate(nick){
   const lk=lockGet('admin');
   if(lk.until>Date.now()){ toast('3번 틀렸어요. 10분 뒤에 다시 오세요. 그동안 냉탕이라도 다녀오시고요.','bad'); return false; }
-  const exists=DB.members.some(m=>m.isAdmin);
+  const exists=DB.members.some(m=>m.isAdmin&&nickKey(m.nick)===nickKey(nick));
   if(!exists){
-    const a=await pinBox(8,{title:'범쨩 등록',
-      desc:'범쨩은 이 페이지 주인 자리예요. 쓰실 8자리 숫자를 정해주세요.',
-      warn:'지금 정한 번호가 앞으로의 범쨩 비번입니다. 복구가 안 돼요.',okLabel:'등록'});
+    const a=await pinBox(8,{title:nick+' 등록',
+      desc:nick+' 자리는 이 페이지 운영자예요. 쓰실 8자리 숫자를 정해주세요.',
+      warn:'지금 정한 번호가 앞으로의 비번입니다. 복구가 안 돼요.',okLabel:'등록'});
     if(!a||a.length<8) return false;
     const b=await pinBox(8,{title:'한 번 더',desc:'확인을 위해 같은 번호를 다시 넣어주세요.',okLabel:'등록'});
     if(b!==a){ toast('두 번 넣은 번호가 달라요. 다시 해주세요.','bad'); return false; }
-    try{ await Api.adminClaim(a); }
+    try{ await Api.adminClaim(nick,a); }
     catch(e){ if(String(e.message)!=='ADMIN_EXISTS'){ toast(errMsg(e),'bad'); return false; } }
-    toast('범쨩 등록 완료. 출근하셨습니다.','good'); await reload(); renderAll(); return true;
+    toast(nick+' 등록 완료. 출근하셨습니다.','good'); await reload(); renderAll(); return true;
   }
   for(;;){
-    const a=await pinBox(8,{title:'범쨩 확인',desc:'범쨩 비밀번호 8자리를 넣어주세요.'});
+    const a=await pinBox(8,{title:nick+' 확인',desc:nick+' 비밀번호 8자리를 넣어주세요.'});
     if(!a) return false;
     try{
-      await Api.adminLogin(a);
-      lockClear('admin'); toast('범쨩 출근!','good'); await reload(); renderAll(); return true;
+      await Api.adminLogin(nick,a);
+      lockClear('admin'); toast(nick+' 출근!','good'); await reload(); renderAll(); return true;
     }catch(e){
       if(String(e.message)!=='BAD_PIN'){ toast(errMsg(e),'bad'); return false; }
       const l=lockHit('admin',TRIES,ADMIN_LOCK);
       if(l.until>Date.now()){ toast('3번 틀렸어요. 10분 뒤에 다시 오세요. 그동안 냉탕이라도 다녀오시고요.','bad'); return false; }
-      toast('범쨩 아니신 것 같은데요.. 남은 시도 '+(TRIES-l.tries)+'번.','bad');
+      toast(nick+' 아니신 것 같은데요. 남은 시도 '+(TRIES-l.tries)+'번.','bad');
     }
   }
 }
@@ -2117,7 +2119,7 @@ async function openMembers(){
     const w=el('div','card-wrap'), c=el('div','card');
     c.innerHTML=`<div class="rep-head">
         <span class="nick">${esc(m.nick)}</span>
-        ${m.isAdmin?'<span class="badge badge--admin">범쨩</span>':''}
+        ${m.isAdmin?'<span class="badge badge--admin">운영자</span>':''}
         ${m.bannedUntil?`<span class="badge badge--admin">차단 ${esc(banLeft(Date.parse(m.bannedUntil)||m.bannedUntil))}</span>`:''}
         ${m.warnings?`<span class="badge">경고 ${m.warnings}/3</span>`:''}
       </div>
