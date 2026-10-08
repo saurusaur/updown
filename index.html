@@ -789,8 +789,14 @@ const LIM={POST:500,COMMENT:200,GREET:200,Q:200,NICK_MIN:2,NICK_MAX:12,Q_MIN:5,P
 const POST_COOLDOWN=60*1000, PAGE=20;
 const TRIES=3, PIN_LOCK=5*60*1000, ADMIN_LOCK=10*60*1000;
 const LS={nick:'udfc.nick',lock:'udfc.lock',data:'udfc.data'};
-const ADMIN_NICKS=['범쨩','빵야'];
+/* 운영자 이름. 서버의 fc_admin_nicks() 와 같은 목록을 들고 있어야 한다.
+   OWNER_NICK 은 사장님 본인 자리다 — 권한은 같고 문구만 달라진다. */
+const ADMIN_NICKS=['범쨩','빵야씨','강다운'];
+const OWNER_NICK='강다운';
 const isAdminNick=t=>ADMIN_NICKS.some(a=>nickKey(a)===nickKey(t));
+const isOwnerNick=t=>nickKey(t||'')===nickKey(OWNER_NICK);
+/** 지금 보고 있는 사람이 사장님인가. */
+const meIsOwner=()=>!!Me.row&&Me.row.isAdmin&&isOwnerNick(Me.nick);
 const BANNED=['관리자','운영자','어드민','admin','사장님','금샘탕','사우나범','범짱'];
 
 /* --- 시간: 전부 KST 기준 --------------------------------------- */
@@ -1354,7 +1360,7 @@ const GREET_Q=[
    ph:'탕 온도 물어보면 1도 단위로 알려주시는 그 프로 정신..'},
   {k:'q3',label:'여기서 뭘 하고 싶으세요?',hint:'활동 포부. 비워두셔도 됩니다.',req:false,
    ph:'매일 출석해서 주접 한 줄씩. 100일 채우는 게 목표예요'},
-  {k:'q4',label:'탕 취향이 어떻게 되세요?',hint:'같은 취향 찾으면 반가우니까요.',req:false,
+  {k:'q4',label:'목욕탕 취향이 어떻게 되세요?',hint:'같은 취향 찾으면 반가우니까요.',req:false,
    ph:'열탕 3분 냉탕 1분 무한반복파. 건식은 90도부터 인정합니다'},
 ];
 /* 실제 주소는 확인이 안 돼서 비워둔다. 범쨩이 페이지에서 직접 채운다.
@@ -1560,7 +1566,9 @@ function renderQuestions(){
     if(q.answer) c.insertAdjacentHTML('beforeend',
       `<div class="qa"><p class="t-meta">사장님 답변</p><div class="body">${esc(q.answer)}</div></div>`);
     if(Me.can('moderate')){
-      const a=el('button','btn btn--sm',q.answer?'답변 고치기':'답변 옮겨 적기');a.type='button';
+      const own=meIsOwner();
+      const a=el('button','btn btn--sm',
+        q.answer?'답변 고치기':(own?'답변 달기':'답변 옮겨 적기'));a.type='button';
       a.style.marginTop='var(--s3)';
       a.addEventListener('click',()=>answerQ(q));
       c.appendChild(a);
@@ -1992,8 +2000,13 @@ async function submitQuestion(){
   toast('질문 접수! 답이 올지는 사장님 마음이에요.','good'); await reload(); refreshQGate();
 }
 async function answerQ(q){
-  const a=await textBox('사장님 답변 옮겨 적기',
-    '사장님이 계정이나 다른 데 남기신 답을 그대로 옮겨주세요. 여기서 직접 답해주셔도 되고요.',q.answer||'',500);
+  /* 사장님이 직접 들어오셨을 때와, 범쨩이 옮겨 적을 때의 문구가 다르다. */
+  const own=meIsOwner();
+  const a=await textBox(
+    own?'사장님 답변 달기':'사장님 답변 옮겨 적기',
+    own?'여기 쓰시면 질문 아래에 사장님 답변으로 붙습니다. 안 쓰고 넘기셔도 괜찮아요.'
+       :'사장님이 계정이나 다른 데 남기신 답을 그대로 옮겨주세요.',
+    q.answer||'',500);
   if(a===null) return;
   try{ await Api.answerQ(q._id,a); toast(a?'답변 붙였습니다':'답변 지웠어요','good'); await reload(); }
   catch(e){ toast(errMsg(e),'bad'); }
@@ -2149,7 +2162,7 @@ async function openMembers(){
     const w=el('div','card-wrap'), c=el('div','card');
     c.innerHTML=`<div class="rep-head">
         <span class="nick">${esc(m.nick)}</span>
-        ${m.isAdmin?'<span class="badge badge--admin">운영자</span>':''}
+        ${m.isAdmin?`<span class="badge badge--admin">${isOwnerNick(m.nick)?'사장님':'운영자'}</span>`:''}
         ${m.bannedUntil?`<span class="badge badge--admin">차단 ${esc(banLeft(Date.parse(m.bannedUntil)||m.bannedUntil))}</span>`:''}
         ${m.warnings?`<span class="badge">경고 ${m.warnings}/3</span>`:''}
       </div>
@@ -2280,7 +2293,6 @@ function drawSteam(){
 
 /* --- 부팅 ------------------------------------------------------- */
 const COLS=['members','posts','comments','likes','greetings','questions','notices','reports','links','warnings'];
-const POLL_MS=15000;
 
 async function boot(){
   drawSteam();
@@ -2307,12 +2319,15 @@ async function boot(){
   :                     '지금은 이 기기에만 저장되는 모드예요. 쓰신 글은 다른 사람에게 안 보입니다.';
 
   if(mode==='supabase'){
+    /* 주기적으로 다시 그리지 않는다. 쓰기 직후엔 reload() 가 당겨오고,
+       그 밖에는 이 페이지로 돌아올 때 한 번만 맞춘다. 가만히 보고 있는
+       화면을 멋대로 갈아끼우면 쓰던 글이 날아간다. */
     const pull=async()=>{ try{ await Api.refresh(); paintSoon(); }catch(e){} };
     const me=await Api.restore();
     if(me) toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.');
     renderAll(); checkWarnings();
-    setInterval(pull,POLL_MS);
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pull(); });
+    window.addEventListener('focus',pull);
   }else{
     COLS.forEach(c=>Store.watch(c,rows=>{
       DB[c]=rows;

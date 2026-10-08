@@ -75,15 +75,21 @@ const SUPABASE={
 
 ## 운영자 계정
 
-운영자 이름은 **`범쨩`과 `빵야`** 두 자리입니다. 각자 자기 8자리를 따로 정하고,
-서로의 비번으로는 들어갈 수 없습니다. 일반 가입으로는 이 두 이름을 쓸 수 없어요.
+운영자 이름은 **`범쨩`, `빵야씨`, `강다운`** 세 자리입니다. `강다운` 은 사장님 본인 자리예요.
+각자 자기 8자리를 따로 정하고, 서로의 비번으로는 들어갈 수 없습니다.
+일반 가입으로는 이 세 이름을 쓸 수 없어요.
+
+사장님으로 들어오시면 팬미팅 질문에 **직접 답변을 다실 수 있습니다** (버튼이 `답변 달기`).
+범쨩·빵야씨가 볼 때는 `답변 옮겨 적기` — 사장님이 다른 데 남기신 답을 옮기는 용도입니다.
+어느 쪽으로 넣어도 질문 아래에 `사장님 답변` 으로 똑같이 붙습니다.
+회원 목록에서 사장님은 `사장님`, 나머지는 `운영자` 로 표시돼요.
 
 운영자를 늘리거나 바꾸려면 스키마의 `fc_admin_nicks()` 한 줄만 고치면 되고,
 페이지 쪽 `ADMIN_NICKS` 도 같이 맞춰주세요.
 
 처음 한 번만 하면 됩니다.
 
-1. 페이지에서 **이름표 달기** → 닉네임에 `범쨩` 또는 `빵야` 입력
+1. 페이지에서 **이름표 달기** → 닉네임에 `범쨩` / `빵야씨` / `강다운` 중 하나 입력
 2. 8자리 숫자를 정하고 한 번 더 확인 → 등록 완료
 3. 그 뒤로는 같은 방법으로 들어가면 8자리를 물어봅니다
 
@@ -93,7 +99,7 @@ const SUPABASE={
 ```sql
 update fc_members
    set admin_hash = extensions.crypt('새8자리', extensions.gen_salt('bf', 10))
- where nick_key = '범쨩';   -- 또는 '빵야'
+ where nick_key = '범쨩';   -- 또는 '빵야씨', '강다운'
 ```
 
 ---
@@ -201,7 +207,7 @@ create table if not exists fc_members (
   nick_key    text        not null unique,
   token       uuid        not null default gen_random_uuid() unique,
   pin_hash    text,        -- 회원 4자리. 다른 기기에서 이름표를 되찾을 때 쓴다
-  admin_hash  text,        -- 범쨩 8자리
+  admin_hash  text,        -- 운영자 8자리
   joined_at   timestamptz not null default now(),
   greeted_at  timestamptz,
   is_admin    boolean     not null default false,
@@ -415,13 +421,24 @@ $$;
 
 -- 운영자로 예약된 이름들. 여기 적힌 이름은 일반 가입이 막히고,
 -- 각자 자기 8자리로 처음 한 번 등록한 뒤 그 번호로 들어온다.
+-- 운영자 이름 목록. 여기만 고치면 운영자가 늘거나 줄어든다.
+-- (페이지 쪽 ADMIN_NICKS 도 같이 맞춰주세요.)
+-- '강다운' 은 사장님 본인 자리다. 권한은 같고 화면 문구만 다르다.
 create or replace function fc_admin_nicks()
-returns text[] language sql immutable as $$ select array['범쨩','빵야'] $$;
+returns text[] language sql immutable as $$ select array['범쨩','빵야씨','강다운'] $$;
 
 create or replace function fc_is_admin_nick(p_key text)
 returns boolean language sql stable as $$
   select exists (select 1 from unnest(fc_admin_nicks()) n where fc_norm(n) = p_key)
 $$;
+
+-- '빵야' 로 이미 등록해 두셨다면 '빵야씨' 로 이름만 옮겨 준다.
+-- 비번은 그대로 쓰시면 됩니다. 등록 전이었다면 아무 일도 일어나지 않는다.
+update fc_members
+   set nick = '빵야씨', nick_key = fc_norm('빵야씨')
+ where nick_key = fc_norm('빵야')
+   and is_admin
+   and not exists (select 1 from fc_members m2 where m2.nick_key = fc_norm('빵야씨'));
 
 -- 이름표 달기 ------------------------------------------------------------
 create or replace function fc_join(p_nick text, p_pin text)

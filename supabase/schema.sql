@@ -19,7 +19,7 @@ create table if not exists fc_members (
   nick_key    text        not null unique,
   token       uuid        not null default gen_random_uuid() unique,
   pin_hash    text,        -- 회원 4자리. 다른 기기에서 이름표를 되찾을 때 쓴다
-  admin_hash  text,        -- 범쨩 8자리
+  admin_hash  text,        -- 운영자 8자리
   joined_at   timestamptz not null default now(),
   greeted_at  timestamptz,
   is_admin    boolean     not null default false,
@@ -233,13 +233,24 @@ $$;
 
 -- 운영자로 예약된 이름들. 여기 적힌 이름은 일반 가입이 막히고,
 -- 각자 자기 8자리로 처음 한 번 등록한 뒤 그 번호로 들어온다.
+-- 운영자 이름 목록. 여기만 고치면 운영자가 늘거나 줄어든다.
+-- (페이지 쪽 ADMIN_NICKS 도 같이 맞춰주세요.)
+-- '강다운' 은 사장님 본인 자리다. 권한은 같고 화면 문구만 다르다.
 create or replace function fc_admin_nicks()
-returns text[] language sql immutable as $$ select array['범쨩','빵야'] $$;
+returns text[] language sql immutable as $$ select array['범쨩','빵야씨','강다운'] $$;
 
 create or replace function fc_is_admin_nick(p_key text)
 returns boolean language sql stable as $$
   select exists (select 1 from unnest(fc_admin_nicks()) n where fc_norm(n) = p_key)
 $$;
+
+-- '빵야' 로 이미 등록해 두셨다면 '빵야씨' 로 이름만 옮겨 준다.
+-- 비번은 그대로 쓰시면 됩니다. 등록 전이었다면 아무 일도 일어나지 않는다.
+update fc_members
+   set nick = '빵야씨', nick_key = fc_norm('빵야씨')
+ where nick_key = fc_norm('빵야')
+   and is_admin
+   and not exists (select 1 from fc_members m2 where m2.nick_key = fc_norm('빵야씨'));
 
 -- 이름표 달기 ------------------------------------------------------------
 create or replace function fc_join(p_nick text, p_pin text)
