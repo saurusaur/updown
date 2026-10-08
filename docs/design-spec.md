@@ -1237,6 +1237,11 @@ Press Start 2P는 em 대비 글자가 크고 자간이 넓다. 같은 `font-size
 
 ### 태그 / 뱃지
 
+> **구현 확정**: 뱃지는 닉네임 옆이 아니라 **카드 첫 줄의 오른쪽 끝**에 붙인다.
+> 이름 옆에 붙으면 이름의 일부처럼 읽히고, 긴 닉네임에서는 줄이 밀린다.
+> 마크업은 `.who` (flex) 안의 `.who__tags` 묶음이고 `margin-left:auto` 로 민다.
+> 글자는 본문보다 한 단 작은 `--t-tag` (11px / 데스크톱 12px), 패딩 `1px 5px`.
+
 ```css
 [data-skin="pixel"] .tag{
   border-radius:0; clip-path:none;
