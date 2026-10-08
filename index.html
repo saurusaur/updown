@@ -53,6 +53,8 @@ button,input,textarea,select{font:inherit;color:inherit;}
   --leaf:#2FA84F; --leaf-ink:#1E7A38; --plum:#C2185B;
   --egg-w:#FFFFFF;
   --logo-blue:#10429E; --logo-red:#E0201F;
+  --stone:#8E99A8; --stone-hi:#C3CCD8; --stone-lo:#4E5767;
+  --ember:#FF7A2F; --ember-hi:#FFC44D; --ember-lo:#A82C00;
 
   --bd:3px solid var(--line);
   --bd-thick:4px solid var(--line);
@@ -98,6 +100,8 @@ button,input,textarea,select{font:inherit;color:inherit;}
     --red:#FF5C5C; --blue:#4FA9FF; --blue-ink:#79C3FF;
     --leaf:#2FA84F; --leaf-ink:#6BE59A; --plum:#FF6BA8;
     --egg-w:#EAF3E0; --logo-blue:#6FB4FF; --logo-red:#FF5C5C;
+    --stone:#7A869A; --stone-hi:#AEB9C9; --stone-lo:#39414F;
+    --ember:#FF9044; --ember-hi:#FFD36B; --ember-lo:#8E2400;
   }
 }
 :root[data-theme="dark"]{
@@ -109,6 +113,8 @@ button,input,textarea,select{font:inherit;color:inherit;}
   --red:#FF5C5C; --blue:#4FA9FF; --blue-ink:#79C3FF;
   --leaf:#2FA84F; --leaf-ink:#6BE59A; --plum:#FF6BA8;
   --egg-w:#EAF3E0; --logo-blue:#6FB4FF; --logo-red:#FF5C5C;
+  --stone:#7A869A; --stone-hi:#AEB9C9; --stone-lo:#39414F;
+  --ember:#FF9044; --ember-hi:#FFD36B; --ember-lo:#8E2400;
 }
 body{
   background:
@@ -278,7 +284,7 @@ input:focus,textarea:focus{background:var(--bg-soft);outline:3px solid var(--blu
   box-shadow:var(--sh-sm);clip-path:var(--clip);
   font:500 var(--t-ui)/1 var(--font-body);font-variant-numeric:tabular-nums;}
 .like{border-radius:0;}
-.like svg{width:22px;height:19px;flex:none;}
+.like svg{flex:none;}
 .like[aria-pressed="true"]{background:var(--yolk);color:#141414;}
 .like:active{transform:translate(2px,2px);box-shadow:var(--sh-press);}
 .like .puff{position:absolute;left:50%;top:-4px;width:10px;height:22px;
@@ -354,6 +360,20 @@ dialog::backdrop{
   display:flex;gap:var(--s2);align-items:flex-start;}
 .notice{border-radius:0;}
 
+/* 입덕 스탯 패널 */
+.stat-head{font:400 var(--t-h3)/1.3 var(--font-head);margin-bottom:var(--s2);}
+.stat-big{display:flex;align-items:baseline;gap:5px;
+  padding:var(--s2) var(--s3);margin-bottom:var(--s3);
+  background:var(--yolk);color:#141414;border:var(--bd);clip-path:var(--clip);}
+.stat-big .n{font:400 var(--t-count)/1 var(--font-display);font-variant-numeric:tabular-nums;}
+.stat-big .u{font:500 var(--t-ui)/1 var(--font-body);}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin:0;}
+.stat-cell{border:var(--bd);background:var(--card-2);padding:var(--s2);clip-path:var(--clip);}
+.stat-cell dt{font:400 var(--t-meta)/1.3 var(--font-body);color:var(--grey);}
+.stat-cell dd{margin:2px 0 0;display:flex;align-items:baseline;gap:3px;}
+.stat-cell .v{font:400 var(--t-h2)/1 var(--font-display);font-variant-numeric:tabular-nums;}
+.stat-cell .k{font:400 var(--t-meta)/1 var(--font-body);color:var(--grey);}
+
 /* 링크 카드 */
 .link-card{display:flex;align-items:center;gap:var(--s3);text-decoration:none;color:inherit;}
 .link-card .ico{width:34px;height:34px;flex:none;display:grid;place-items:center;
@@ -403,6 +423,7 @@ dialog::backdrop{
         <span class="n"><span class="lat" id="dayNum">00</span></span><span class="u">일째 입덕 ing..</span>
       </span>
       <button class="btn btn--sm" type="button" id="rulesBtn">활동 규칙</button>
+      <span class="me-chip" id="meChip" hidden></span>
       <button class="btn btn--sm" type="button" id="meBtn">이름표 달기</button>
       <button class="btn btn--sm" type="button" id="jumpHello">인사해요</button>
     </div>
@@ -411,6 +432,18 @@ dialog::backdrop{
 
     <div class="cols">
       <div>
+        <div class="card-wrap" style="margin-bottom:var(--s5)" id="myStatsWrap" hidden>
+          <div class="card">
+            <h3 class="stat-head"><span id="myStatsName"></span>님의 입덕 기록</h3>
+            <div class="stat-big">
+              <span class="n"><span class="lat" id="myDays">0</span></span>
+              <span class="u">일째 입덕 중</span>
+            </div>
+            <dl class="stat-grid" id="myStatList"></dl>
+            <p class="t-meta" id="myStatNote" style="margin-top:var(--s2)"></p>
+          </div>
+        </div>
+
         <section id="hot" hidden>
           <div class="sec-head"><h2>인기글</h2><span class="line"></span></div>
           <p class="sec-sub">요즘 제일 뜨거운 주접들</p>
@@ -1074,6 +1107,45 @@ const ART={
 };
 const egg=k=>ART[k+'_b'];
 
+/* --- 사우나돌 --------------------------------------------------
+   공감 표시는 하트가 아니라 사우나 스톤이다. 글마다 다른 돌이
+   나오되 같은 글은 늘 같은 돌이 나오게 id 로 고른다.
+   격자: . 빈칸 / o 몸통 / h 윗면 하이라이트 / d 아랫면 그늘 ---- */
+const STONES=[
+  ['..dddd..','.dhhhhd.','dhhoohhd','dhoooohd','dooooood','dooooood','.dooood.','..dddd..'],
+  ['...dd...','..dhhd..','.dhhhhd.','dhhooohd','dooooood','.dooood.','..dddd..','........'],
+  ['.dddd...','dhhhhd..','dhhoohd.','dooooohd','dooooood','.doooood','..ddddd.','........'],
+  ['........','.dddddd.','dhhhhhhd','dooooood','dooooood','.dooood.','..dddd..','........'],
+  ['...ddd..','..dhhhd.','.dhhoohd','.dhooood','dooooood','dooooood','.dddddd.','........'],
+  ['..ddd...','.dhhhd..','dhhoohd.','dhoooohd','dooooood','dooooood','.dddddd.','........'],
+];
+const FILL={o:'body', h:'hi', d:'lo'};
+/** 격자를 rect 들로 편다. 같은 색은 가로로 이어 붙여 rect 수를 줄인다. */
+function stoneSVG(seed, hot, px){
+  const g=STONES[Math.abs(hash32(String(seed)))%STONES.length];
+  const c = hot ? {body:'var(--ember)', hi:'var(--ember-hi)', lo:'var(--ember-lo)'}
+                : {body:'var(--stone)', hi:'var(--stone-hi)', lo:'var(--stone-lo)'};
+  let out='';
+  g.forEach((row,y)=>{
+    let x=0;
+    while(x<row.length){
+      const ch=row[x];
+      if(ch==='.'){ x++; continue; }
+      let w=1; while(x+w<row.length && row[x+w]===ch) w++;
+      out+=`<rect x="${x}" y="${y}" width="${w}" height="1" fill="${c[FILL[ch]]}"/>`;
+      x+=w;
+    }
+  });
+  const n=px||20;
+  return `<svg viewBox="0 0 8 8" width="${n}" height="${n}" shape-rendering="crispEdges" aria-hidden="true">${out}</svg>`;
+}
+/** 문자열 → 정수. 같은 글에 늘 같은 돌이 붙게 하는 용도. */
+function hash32(str){
+  let h=2166136261;
+  for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+  return h|0;
+}
+
 /* --- 카피 ------------------------------------------------------- */
 const RULES=[
   ['때는 밀어도 마음은 밀지 말기','욕설, 비꼬기, 저격 금지. 여긴 열탕이지 싸움판이 아니에요.'],
@@ -1202,9 +1274,9 @@ function postCard(p,{hot}={}){
   like.setAttribute('aria-pressed',liked?'true':'false');
   like.setAttribute('aria-label','공감 '+likeN+'개');
   like.innerHTML=`<span class="puff" aria-hidden="true">${ART.steam_b}</span>`
-    +egg('spark')+`<span class="n">${likeN}</span>`;
-  like.querySelectorAll('svg').forEach(s=>{if(!s.closest('.puff')){s.setAttribute('width','22');s.setAttribute('height','19');}});
+    +stoneSVG(p.id,liked,24)+`<span class="n">${likeN}</span>`;
   like.addEventListener('click',()=>toggleLike(p,like));
+  like.title='사우나돌 올리기';
   foot.appendChild(like);
   const cm=el('button','btn btn--sm btn--ghost','댓글 '+cmtN); cm.type='button';
   cm.addEventListener('click',()=>openDetail(p.id)); foot.appendChild(cm);
@@ -1337,6 +1409,39 @@ function renderNotice(){
   d.innerHTML=`<strong>공지</strong><span>${esc(n.body)}</span>`;
   slot.appendChild(d);
 }
+/** 내 입덕 기록. 받은 공감은 내 글에 올라온 돌을 전부 센다. */
+function renderMyStats(){
+  const wrap=$('#myStatsWrap');
+  if(!Me.row){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  $('#myStatsName').textContent=Me.nick;
+  $('#myDays').textContent=String(Me.days);
+
+  const mine=DB.posts.filter(p=>p.nickKey===Me.key);
+  const mineIds=new Set(mine.map(p=>String(p.id)));
+  const got=DB.likes.filter(l=>mineIds.has(String(l.postId))).length;
+  const gave=DB.likes.filter(l=>l.nickKey===Me.key).length;
+  const cmts=DB.comments.filter(c=>c.nickKey===Me.key&&!c.hidden).length;
+  const qs=DB.questions.filter(q=>q.nickKey===Me.key).length;
+  const answered=DB.questions.filter(q=>q.nickKey===Me.key&&q.answer).length;
+
+  const rows=[['쓴 주접',mine.length,'개'],['받은 사우나돌',got,'개'],
+              ['올린 사우나돌',gave,'개'],['단 댓글',cmts,'개'],
+              ['넣은 질문',qs,'개'],['받은 답변',answered,'개']];
+  const dl=$('#myStatList'); dl.innerHTML='';
+  rows.forEach(([k,v,unit])=>{
+    const c=el('div','stat-cell');
+    c.innerHTML=`<dt>${esc(k)}</dt><dd><span class="v">${v}</span><span class="k">${unit}</span></dd>`;
+    dl.appendChild(c);
+  });
+
+  const note=$('#myStatNote');
+  if(Me.state==='member') note.textContent='인사를 남기시면 주접도 쓰실 수 있어요.';
+  else if(!mine.length)   note.textContent='아직 조용하시네요. 한 줄 떨어보시죠.';
+  else if(got>=10)        note.textContent='돌이 꽤 쌓였어요. 탕 온도 올라갑니다.';
+  else                    note.textContent='꾸준히 오시는 게 제일이에요.';
+}
+
 function renderStats(){
   const dl=$('#statList'); dl.innerHTML='';
   const rows=[
@@ -1353,12 +1458,16 @@ function renderStats(){
   });
 }
 function renderMe(){
-  const chip=$('#dayChip'), btn=$('#meBtn');
+  const chip=$('#dayChip'), me=$('#meChip'), btn=$('#meBtn');
   if(Me.row){
     chip.hidden=false; $('#dayNum').textContent=String(Me.days).padStart(2,'0');
-    btn.textContent=Me.nick+(Me.state==='admin'?' (범쨩)':'');
-  }else{ chip.hidden=true; btn.textContent='이름표 달기'; }
+    me.hidden=false;
+    me.innerHTML=`<span class="nick">${esc(Me.nick)}</span>`
+      +(Me.state==='admin'?'<span class="badge badge--admin">범쨩</span>':'');
+    btn.textContent='로그아웃';
+  }else{ chip.hidden=true; me.hidden=true; btn.textContent='이름표 달기'; }
   $('#adminCard').hidden=!Me.can('moderate');
+  renderMyStats();
 }
 function renderAll(){ renderNotice();renderPosts();renderGreetings();renderQuestions();
   renderLinks();renderStats();renderMe(); }
@@ -1549,6 +1658,8 @@ async function toggleLike(p,btn){
     const r=await Api.toggleLike(p.id);
     btn.setAttribute('aria-pressed',r.liked?'true':'false');
     n.textContent=String(r.count);
+    const old=btn.querySelector('svg:not(.puff svg)');
+    if(old) old.outerHTML=stoneSVG(p.id,r.liked,24);
     await reload();
   }catch(e){
     btn.setAttribute('aria-pressed',on?'true':'false');
