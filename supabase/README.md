@@ -139,6 +139,9 @@ update fc_members
 | **회원 4자리** | 이름표를 만들 때 정합니다. **다른 기기에서 같은 이름표로 들어올 때** 씁니다. |
 | **범쨩 8자리** | 운영자 계정에만 있습니다. |
 
+둘 다 입덕 기록 패널의 **비밀번호 바꾸기**에서 바꿀 수 있습니다. 지금 쓰는 번호를
+먼저 맞혀야 바뀌고, 범쨩은 여덟 자리로만 바꿀 수 있어요.
+
 둘 다 bcrypt 로 해시해서 서버에서만 비교하고, 뷰에는 나가지 않습니다.
 
 글을 고치거나 지울 때는 비밀번호를 묻지 않습니다. 토큰이 이미 이 기기의 신원을
@@ -302,6 +305,7 @@ drop function if exists fc_profile(fc_members);
 drop function if exists fc_admin_reports(uuid);
 drop function if exists fc_admin_ban(uuid,bigint,boolean);
 drop function if exists fc_admin_members(uuid);
+drop function if exists fc_change_pin(uuid,text,text);
 -- 비밀번호 칼럼 두 개. 회원 4자리와 범쨩 8자리는 역할이 달라 따로 둔다.
 alter table fc_members add column if not exists pin_hash     text;
 alter table fc_members add column if not exists banned_until timestamptz;
@@ -446,6 +450,27 @@ begin
   update fc_members set pin_hash = crypt(p_pin, gen_salt('bf', 10))
    where id = v.id returning * into v;
   return fc_profile(v);
+end $$;
+
+-- 비번 바꾸기. 회원은 네 자리, 범쨩은 여덟 자리를 쓴다.
+-- 지금 쓰는 번호를 먼저 맞혀야 바뀐다.
+create or replace function fc_change_pin(p_token uuid, p_old text, p_new text)
+returns void language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members; cur text; want text;
+begin
+  v := fc_auth(p_token);
+  if v.is_admin then cur := v.admin_hash; want := '^\d{8}$';
+  else               cur := v.pin_hash;   want := '^\d{4}$';
+  end if;
+  if cur is null then raise exception 'NO_PIN'; end if;
+  if cur <> crypt(p_old, cur) then raise exception 'BAD_PIN'; end if;
+  if p_new !~ want then raise exception 'PIN_FORMAT'; end if;
+  if v.is_admin then
+    update fc_members set admin_hash = crypt(p_new, gen_salt('bf', 10)) where id = v.id;
+  else
+    update fc_members set pin_hash   = crypt(p_new, gen_salt('bf', 10)) where id = v.id;
+  end if;
 end $$;
 
 -- 이 기기에 남은 토큰으로 세션 복구 --------------------------------------
@@ -775,6 +800,7 @@ revoke all on function fc_auth(uuid), fc_need_admin(uuid), fc_profile(fc_members
 grant execute on function fc_join(text,text) to anon, authenticated;
 grant execute on function fc_login(text,text) to anon, authenticated;
 grant execute on function fc_set_pin(uuid,text) to anon, authenticated;
+grant execute on function fc_change_pin(uuid,text,text) to anon, authenticated;
 grant execute on function fc_login_by_token(uuid) to anon, authenticated;
 grant execute on function fc_admin_claim(text) to anon, authenticated;
 grant execute on function fc_admin_login(text) to anon, authenticated;

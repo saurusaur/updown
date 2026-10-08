@@ -496,6 +496,9 @@ dialog::backdrop{
               <div id="myState"></div>
               <dl class="stat-grid" id="myStatList"></dl>
               <p class="t-meta" id="myStatNote"></p>
+              <div class="row" style="margin-top:var(--s3)">
+                <button class="btn btn--sm btn--ghost" type="button" id="pinBtn">비밀번호 바꾸기</button>
+              </div>
             </div>
           </details>
         </div>
@@ -1058,6 +1061,7 @@ const ApiSupabase={
   login:async (n,pin)=>Api._save(await SB.rpc('fc_login',{p_nick:n,p_pin:pin})),
   adminLogin:async pin=>Api._save(await SB.rpc('fc_admin_login',{p_pin:pin})),
   adminClaim:async pin=>Api._save(await SB.rpc('fc_admin_claim',{p_pin:pin})),
+  changePin(o,nw){ return SB.rpc('fc_change_pin',{p_token:this.token,p_old:o,p_new:nw}); },
   greet(a){ return SB.rpc('fc_greet',{p_token:this.token,p_answers:a}).then(p=>this._save(p)); },
   createPost(b){ return SB.rpc('fc_create_post',{p_token:this.token,p_body:b}); },
   editPost(id,b){ return SB.rpc('fc_edit_post',{p_token:this.token,p_id:id,p_body:b}); },
@@ -1137,6 +1141,16 @@ const ApiDoc={
     if(!await samePin(pin,ADMIN_NICK,row.adminHash)) throw new Error('BAD_PIN');
     try{ localStorage.setItem(LS.nick,ADMIN_NICK); }catch(e){}
     return this._row(id,row);
+  },
+  async changePin(oldPin,newPin){
+    const admin=!!Me.row.isAdmin;
+    const cur=admin?Me.row.adminHash:Me.row.pinHash;
+    if(!cur) throw new Error('NO_PIN');
+    if(!await samePin(oldPin, admin?ADMIN_NICK:Me.nick, cur)) throw new Error('BAD_PIN');
+    if(!new RegExp(admin?'^\\d{8}$':'^\\d{4}$').test(newPin)) throw new Error('PIN_FORMAT');
+    const h=await hashPin(newPin, admin?ADMIN_NICK:Me.nick);
+    await Store.patch('members',Me.row._id, admin?{adminHash:h}:{pinHash:h});
+    Me.row[admin?'adminHash':'pinHash']=h;
   },
   async greet(answers){
     const mine=DB.greetings.find(g=>g.nickKey===Me.key), now=Date.now();
@@ -2077,6 +2091,22 @@ function askBanDays(nick){
   });
 }
 
+/** 비번 바꾸기. 회원은 네 자리, 범쨩은 여덟 자리. */
+async function changePin(){
+  if(!Me.row) return;
+  const admin=Me.state==='admin', len=admin?8:4;
+  const cur=await pinBox(len,{title:'지금 쓰는 비밀번호',
+    desc:`확인을 위해 지금 쓰시는 ${len}자리를 넣어주세요.`});
+  if(!cur) return;
+  const a=await pinBox(len,{title:'새 비밀번호',desc:`새로 쓰실 숫자 ${len}자리를 정해주세요.`,
+    warn:'복구가 안 되니 꼭 기억해두세요.',okLabel:'다음'});
+  if(!a||a.length<len) return;
+  const b=await pinBox(len,{title:'한 번 더',desc:'확인을 위해 같은 번호를 다시 넣어주세요.',okLabel:'바꾸기'});
+  if(b!==a){ toast('두 번 넣은 번호가 달라요. 다시 해주세요.','bad'); return; }
+  try{ await Api.changePin(cur,a); toast('비밀번호를 바꿨습니다.','good'); }
+  catch(e){ toast(errMsg(e),'bad'); }
+}
+
 /* --- 범쨩 : 회원 관리 ---------------------------------------------- */
 async function openMembers(){
   const box=$('#memberBody'); box.innerHTML='';
@@ -2292,6 +2322,7 @@ $('#moreBtn').addEventListener('click',()=>{shown+=PAGE;renderPosts();});
 $('#noticeBtn').addEventListener('click',editNotice);
 $('#reportBtn').addEventListener('click',openReports);
 $('#memberBtn').addEventListener('click',openMembers);
+$('#pinBtn').addEventListener('click',changePin);
 $('#linkEditBtn').addEventListener('click',openLinkEditor);
 $('#postBody').addEventListener('input',()=>updCount('#postBody','#postCount',LIM.POST));
 $('#qBody').addEventListener('input',()=>updCount('#qBody','#qCount',LIM.Q));
