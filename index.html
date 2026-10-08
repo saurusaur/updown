@@ -363,26 +363,31 @@ dialog::backdrop{
 
 /* 접히는 패널 */
 .panel{padding:0;}
-.panel-head{display:flex;flex-direction:column;gap:var(--s2);cursor:pointer;
+/* 접었을 때가 기본 모습이다. 일수를 주인공으로 두고 한 줄로 읽히게. */
+.panel-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;gap:var(--s3);cursor:pointer;
   padding:var(--s3) var(--s4);list-style:none;}
-.panel-top{display:flex;align-items:center;gap:var(--s2);}
 .panel-head::-webkit-details-marker{display:none;}
-.panel-head:hover{background:var(--card-2);}
+.panel-head:hover .day-tile{transform:translate(-1px,-1px);box-shadow:var(--sh-sm);}
 .panel-head:focus-visible{outline:3px solid var(--blue-ink);outline-offset:-3px;}
-.panel-mark{margin-left:auto;width:14px;height:14px;flex:none;position:relative;}
+.panel-mark{width:14px;height:14px;flex:none;position:relative;}
 .panel-mark::before,.panel-mark::after{content:'';position:absolute;background:var(--ink);}
 .panel-mark::before{left:0;top:6px;width:14px;height:2px;}
 .panel-mark::after{left:6px;top:0;width:2px;height:14px;transition:opacity var(--dur-fast);}
 .panel[open] .panel-mark::after{opacity:0;}
-.panel-body{padding:var(--s1) var(--s4) var(--s4);}
+.panel-body{padding:0 var(--s4) var(--s4);}
+.panel[open] .panel-head{border-bottom:1px solid var(--grey-line);margin-bottom:var(--s3);}
 
 /* 입덕 스탯 */
-.stat-head{font:400 var(--t-h3)/1.3 var(--font-body);font-weight:700;}
-.stat-big{display:flex;align-items:baseline;gap:5px;align-self:flex-start;
-  padding:var(--s2) var(--s3);
-  background:var(--yolk);color:#141414;border:var(--bd);clip-path:var(--clip);}
-.stat-big .n{font:400 var(--t-count)/1 var(--font-display);font-variant-numeric:tabular-nums;}
-.stat-big .u{font:500 var(--t-ui)/1 var(--font-body);}
+
+.day-tile{display:grid;place-items:center;min-width:56px;padding:var(--s2) var(--s2);
+  background:var(--yolk);color:#141414;border:var(--bd-thick);clip-path:var(--clip);
+  font:400 var(--t-count)/1 var(--font-display);font-variant-numeric:tabular-nums;
+  transition:transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease);}
+.head-text{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.head-sub{font:500 var(--t-ui)/1.2 var(--font-body);}
+.head-text .stat-head{font:400 var(--t-meta)/1.3 var(--font-body);color:var(--grey);
+  font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2);margin:0;}
 @media (min-width:560px){ .stat-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
 .stat-cell{border:var(--bd);background:var(--card-2);padding:var(--s2);clip-path:var(--clip);}
@@ -448,14 +453,12 @@ dialog::backdrop{
         <div class="card-wrap" style="margin-bottom:var(--s5)" id="myStatsWrap" hidden>
           <details class="card panel" id="myStats" open>
             <summary class="panel-head">
-              <span class="panel-top">
+              <span class="day-tile"><span class="lat" id="myDays">00</span></span>
+              <span class="head-text">
+                <span class="head-sub">일째 입덕 ing..</span>
                 <span class="stat-head"><span id="myStatsName"></span>님의 입덕 기록</span>
-                <span class="panel-mark" aria-hidden="true"></span>
               </span>
-              <span class="stat-big">
-                <span class="n"><span class="lat" id="myDays">00</span></span>
-                <span class="u">일째 입덕 ing..</span>
-              </span>
+              <span class="panel-mark" aria-hidden="true"></span>
             </summary>
             <div class="panel-body">
               <dl class="stat-grid" id="myStatList"></dl>
@@ -557,19 +560,27 @@ dialog::backdrop{
 <dialog id="dlgNick"><form method="dialog" class="sheet">
   <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
   <h2>이름표 달기</h2>
-  <p class="t-meta">구경은 이름표 없이도 되지만, 공감이나 주접은 이름이 있어야 해요.</p>
+  <p class="t-meta">구경은 이름표 없이도 되지만, 공감이나 주접은 이름이 있어야 해요.<br>
+     처음 보는 이름이면 새로 만들고, 쓰시던 이름이면 비번으로 들어옵니다.</p>
   <div class="body">
     <div class="field">
       <label for="nickIn">뭐라고 불러드릴까요?</label>
       <input id="nickIn" type="text" maxlength="12" autocomplete="off"
-             placeholder="온탕러버" enterkeyhint="done">
+             placeholder="온탕러버" enterkeyhint="next">
       <span class="hint">2~12자 · 한글, 영문, 숫자와 . _ - 만 쓸 수 있어요</span>
+    </div>
+    <div class="field">
+      <label for="pinIn">비밀번호 네 자리</label>
+      <input id="pinIn" type="password" inputmode="numeric" maxlength="4"
+             autocomplete="off" placeholder="1234" enterkeyhint="done"
+             style="letter-spacing:.5em;text-align:center;font-size:20px">
+      <span class="hint">다른 기기에서 이 이름표로 들어올 때 씁니다. 복구가 안 되니 기억해두세요.</span>
       <span class="hint" id="nickErr" style="color:var(--red)"></span>
     </div>
   </div>
   <div class="actions">
     <button class="btn" value="cancel" type="submit">그냥 구경할래요</button>
-    <button class="btn btn--primary" value="ok" type="submit" id="nickOk">입덕하기</button>
+    <button class="btn btn--primary" value="ok" type="submit" id="nickOk">들어가기</button>
   </div>
 </form></dialog>
 
@@ -861,7 +872,9 @@ const SUPABASE={
 };
 
 const ERR={
-  NICK_TAKEN:'그 이름은 벌써 누가 찜했어요. 뒤에 숫자라도 붙여보실래요?',
+  NICK_TAKEN:'그 이름은 벌써 누가 찜했어요. 본인이시면 비번을 넣어주세요.',
+  NO_PIN:'이 이름표엔 비번이 없어요. 처음 쓰시던 기기에서 열어주세요.',
+  PIN_EXISTS:'비번은 이미 정해져 있어요',
   NICK_LEN:'두 글자는 넘기고 열두 글자는 넘기지 말아주세요',
   NICK_CHARS:'한글, 영문, 숫자랑 . _ - 만 쓸 수 있어요.',
   NICK_BANNED:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!',
@@ -949,7 +962,8 @@ const ApiSupabase={
     try{ const p=await SB.rpc('fc_login_by_token',{p_token:this.token}); return this._save(p); }
     catch(e){ return null; }
   },
-  join:async n=>Api._save(await SB.rpc('fc_join',{p_nick:n})),
+  join:async (n,pin)=>Api._save(await SB.rpc('fc_join',{p_nick:n,p_pin:pin})),
+  login:async (n,pin)=>Api._save(await SB.rpc('fc_login',{p_nick:n,p_pin:pin})),
   adminLogin:async pin=>Api._save(await SB.rpc('fc_admin_login',{p_pin:pin})),
   adminClaim:async pin=>Api._save(await SB.rpc('fc_admin_claim',{p_pin:pin})),
   greet(a){ return SB.rpc('fc_greet',{p_token:this.token,p_answers:a}).then(p=>this._save(p)); },
@@ -987,12 +1001,22 @@ const ApiDoc={
     if(!row){ try{localStorage.removeItem(LS.nick);}catch(e){} return null; }
     return this._row(id,row);
   },
-  async join(nick){
+  async join(nick,pin){
     const id='m_'+nickId(nick);
     if(await Store.get('members',id)) throw new Error('NICK_TAKEN');
+    if(!/^\d{4}$/.test(pin)) throw new Error('PIN_FORMAT');
     const now=Date.now();
     const row=await Store.set('members',id,{nick,nickKey:nickKey(nick),joinedAt:now,joinedDay:kstDay(now),
-      greetedAt:null,isAdmin:false,lastQuestionDay:null,postCount:0,updatedAt:now});
+      pinHash:await hashPin(pin,nick),greetedAt:null,isAdmin:false,
+      lastQuestionDay:null,postCount:0,updatedAt:now});
+    try{ localStorage.setItem(LS.nick,nick); }catch(e){}
+    return this._row(id,row);
+  },
+  async login(nick,pin){
+    const id='m_'+nickId(nick), row=await Store.get('members',id);
+    if(!row) throw new Error('NO_MEMBER');
+    if(!row.pinHash) throw new Error('NO_PIN');
+    if(!await samePin(pin,nick,row.pinHash)) throw new Error('BAD_PIN');
     try{ localStorage.setItem(LS.nick,nick); }catch(e){}
     return this._row(id,row);
   },
@@ -1494,17 +1518,31 @@ async function reload(){ if(Api.mode==='supabase'){ try{ await Api.refresh(); re
 /* --- 이름표 달기 ------------------------------------------------- */
 function openNick(){
   return new Promise(res=>{
-    const d=$('#dlgNick'), inp=$('#nickIn'), err=$('#nickErr');
-    inp.value=''; err.textContent='';
+    const d=$('#dlgNick'), inp=$('#nickIn'), pin=$('#pinIn'), err=$('#nickErr');
+    inp.value=''; pin.value=''; err.textContent='';
+    const again=m=>{ err.textContent=m; toast(m,'bad'); setTimeout(()=>d.showModal(),0); };
     d.onclose=async()=>{
       if(d.returnValue!=='ok') return res(false);
       const v=checkNick(inp.value);
-      if(v.err){ err.textContent=v.err; toast(v.err,'bad'); setTimeout(()=>d.showModal(),0); return; }
+      if(v.err) return again(v.err);
       if(v.admin){ return res(await adminGate()); }
-      try{ await Api.join(v.nick); }
-      catch(ex){ toast(errMsg(ex),'bad'); setTimeout(()=>d.showModal(),0); return; }
-      toast('입덕을 환영합니다. 오늘부터 01일째!','good'); await reload(); renderAll();
-      res(true);
+      const p=pin.value.trim();
+      if(!/^\d{4}$/.test(p)) return again('비밀번호는 숫자 네 자리로 해주세요.');
+      try{
+        await Api.join(v.nick,p);
+        toast('입덕을 환영합니다. 오늘부터 01일째!','good');
+      }catch(ex){
+        if(String(ex.message)!=='NICK_TAKEN') return again(errMsg(ex));
+        /* 쓰던 이름이면 같은 비번으로 들어가 본다 */
+        try{ const me=await Api.login(v.nick,p);
+             toast(me.nick+'님, 다시 오셨네요! '+daysSince(me.joinedDay)+'일째입니다.'); }
+        catch(e2){
+          return again(String(e2.message)==='BAD_PIN'
+            ? '그 이름은 이미 있어요. 본인이시면 비번을 다시 확인해주세요.'
+            : errMsg(e2));
+        }
+      }
+      await reload(); renderAll(); res(true);
     };
     d.showModal(); setTimeout(()=>inp.focus(),60);
   });

@@ -113,9 +113,11 @@ update fc_members
 
 **다만 이것도 만능은 아닙니다.** 솔직하게 적어둡니다.
 
-- **토큰이 새면 그 이름표는 넘어갑니다.** 브라우저 저장소에 들어 있으니 기기를 공유하거나
-  빌려주면 그대로 노출됩니다. 범쨩 8자리도 서버 쪽 시도 횟수 제한이 없어서,
+- **4자리는 경우의 수가 1만입니다.** 서버에 시도 횟수 제한이 없어서, 작정하고 자동화하면
+  남의 이름표로 들어올 수 있습니다. 범쨩 8자리도 마찬가지고요.
   신경 쓰이면 Supabase 의 Rate Limiting 을 켜세요.
+- **토큰이 새면 그 이름표는 넘어갑니다.** 브라우저 저장소에 들어 있으니 기기를 공유하거나
+  빌려주면 그대로 노출됩니다.
 - **가입에 제한이 없습니다.** 닉네임을 대량으로 만들어 도배하는 건 막지 못합니다.
   그런 일이 생기면 범쨩이 지우는 수밖에 없어요.
 - **삭제는 되돌릴 수 없습니다.** 글을 지우면 댓글과 공감도 같이 사라집니다.
@@ -128,15 +130,15 @@ update fc_members
 
 | | |
 |---|---|
-| **토큰** | 이름표를 달면 서버가 발급. 이 기기의 브라우저에만 저장됩니다. 신원 확인은 전부 이걸로 해요. |
-| **범쨩 8자리** | 운영자 계정에만 있습니다. bcrypt 로 서버에서만 비교합니다. |
+| **토큰** | 이름표를 달면 서버가 발급. 이 기기의 브라우저에만 저장됩니다. 평소 신원 확인은 이걸로 해요. |
+| **회원 4자리** | 이름표를 만들 때 정합니다. **다른 기기에서 같은 이름표로 들어올 때** 씁니다. |
+| **범쨩 8자리** | 운영자 계정에만 있습니다. |
 
-회원용 비밀번호는 없습니다. 설정한 적도 없는 번호를 확인하라고 묻는 게 말이 안 되기도 하고,
-토큰이 이미 이 기기의 신원을 증명하니 한 겹 더 둘 이유가 없었어요.
+둘 다 bcrypt 로 해시해서 서버에서만 비교하고, 뷰에는 나가지 않습니다.
 
-**대신 이름표는 이 기기에 묶입니다.** 다른 기기나 다른 브라우저에서 들어오면 같은 이름표를
-되찾을 수 없고, 브라우저 데이터를 지워도 마찬가지입니다. 복구 수단이 필요해지면
-선택 사항으로 비밀번호를 다시 넣을 수 있습니다.
+글을 고치거나 지울 때는 비밀번호를 묻지 않습니다. 토큰이 이미 이 기기의 신원을
+증명하니 한 겹 더 둘 이유가 없고, 설정한 적 없는 번호를 확인하라고 묻는 건 더 이상하니까요.
+비밀번호가 하는 일은 하나입니다 — 휴대폰에서 쓰던 이름표로 노트북에서 들어오는 것.
 
 ---
 
@@ -184,7 +186,8 @@ create table if not exists fc_members (
   nick        text        not null,
   nick_key    text        not null unique,
   token       uuid        not null default gen_random_uuid() unique,
-  admin_hash  text,        -- 범쨩 8자리만. 일반 회원은 비워둔다
+  pin_hash    text,        -- 회원 4자리. 다른 기기에서 이름표를 되찾을 때 쓴다
+  admin_hash  text,        -- 범쨩 8자리
   joined_at   timestamptz not null default now(),
   greeted_at  timestamptz,
   is_admin    boolean     not null default false,
@@ -272,6 +275,7 @@ create table if not exists fc_reports (
 -- 깨지지 않게 하려는 것이고, 테이블의 데이터는 건드리지 않는다.
 drop view if exists v_members, v_posts, v_comments, v_likes,
                     v_greetings, v_questions, v_notice, v_links cascade;
+drop function if exists fc_join(text);
 drop function if exists fc_edit_post(uuid,bigint,text,text);
 drop function if exists fc_delete_post(uuid,bigint,text);
 drop function if exists fc_delete_comment(uuid,bigint,text);
@@ -280,19 +284,12 @@ drop function if exists fc_login(text,text);
 drop function if exists fc_admin_login(text);
 drop function if exists fc_check_pin(fc_members,text);
 drop function if exists fc_profile(fc_members);
--- 회원 비밀번호는 쓰지 않는다. 신원은 이름표를 달 때 받은 토큰이 증명한다.
--- 범쨩 8자리만 남기고, 예전 칼럼에 들어 있던 값은 옮긴 뒤 칼럼을 내린다.
+-- 비밀번호 칼럼 두 개. 회원 4자리와 범쨩 8자리는 역할이 달라 따로 둔다.
+alter table fc_members add column if not exists pin_hash   text;
 alter table fc_members add column if not exists admin_hash text;
-do $$
-begin
-  if exists (select 1 from information_schema.columns
-              where table_schema='public' and table_name='fc_members'
-                and column_name='pin_hash') then
-    execute 'update fc_members set admin_hash = pin_hash
-              where is_admin and admin_hash is null';
-  end if;
-end $$;
-alter table fc_members drop column if exists pin_hash;
+-- 예전 버전에서 범쨩 비번이 pin_hash 에 있었다면 제자리로 옮긴다
+update fc_members set admin_hash = pin_hash, pin_hash = null
+ where is_admin and admin_hash is null and pin_hash is not null;
 
 -- --------------------------------------------------------------- 잠그기 --
 -- 정책을 하나도 만들지 않는다. RLS가 켜져 있고 정책이 없으면 바깥에서는
@@ -374,20 +371,50 @@ returns json language sql stable as $$
 $$;
 
 -- 이름표 달기 ------------------------------------------------------------
-create or replace function fc_join(p_nick text)
+create or replace function fc_join(p_nick text, p_pin text)
 returns json language plpgsql security definer
 set search_path = public, extensions as $$
 declare v fc_members; k text; n text;
 begin
   n := btrim(p_nick); k := fc_norm(n);
   if char_length(n) < 2 or char_length(n) > 12 then raise exception 'NICK_LEN'; end if;
+  if p_pin !~ '^\d{4}$' then raise exception 'PIN_FORMAT'; end if;
   if n !~ '^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9._-]+$'                then raise exception 'NICK_CHARS'; end if;
   if k = fc_norm('범쨩')                                     then raise exception 'ADMIN_RESERVED'; end if;
   if k = any (array['관리자','운영자','어드민','admin','사장님','금샘탕','사우나범','범짱'])
                                                              then raise exception 'NICK_BANNED'; end if;
-  insert into fc_members (nick, nick_key) values (n, k) returning * into v;
+  insert into fc_members (nick, nick_key, pin_hash)
+  values (n, k, crypt(p_pin, gen_salt('bf', 10))) returning * into v;
   return fc_profile(v);
 exception when unique_violation then raise exception 'NICK_TAKEN';
+end $$;
+
+-- 다른 기기에서 내 이름표로 들어오기 --------------------------------------
+create or replace function fc_login(p_nick text, p_pin text)
+returns json language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members;
+begin
+  select * into v from fc_members where nick_key = fc_norm(p_nick);
+  if v.id is null       then raise exception 'NO_MEMBER'; end if;
+  if v.banned           then raise exception 'BANNED'; end if;
+  if v.pin_hash is null then raise exception 'NO_PIN'; end if;
+  if v.pin_hash <> crypt(p_pin, v.pin_hash) then raise exception 'BAD_PIN'; end if;
+  return fc_profile(v);
+end $$;
+
+-- 비번 없이 만들어진 예전 이름표에 비번을 붙여줄 때만 쓴다
+create or replace function fc_set_pin(p_token uuid, p_pin text)
+returns json language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members;
+begin
+  v := fc_auth(p_token);
+  if p_pin !~ '^\d{4}$' then raise exception 'PIN_FORMAT'; end if;
+  if v.pin_hash is not null then raise exception 'PIN_EXISTS'; end if;
+  update fc_members set pin_hash = crypt(p_pin, gen_salt('bf', 10))
+   where id = v.id returning * into v;
+  return fc_profile(v);
 end $$;
 
 -- 이 기기에 남은 토큰으로 세션 복구 --------------------------------------
@@ -633,7 +660,9 @@ revoke all on fc_members, fc_posts, fc_comments, fc_likes, fc_greetings,
 revoke all on function fc_auth(uuid), fc_need_admin(uuid), fc_profile(fc_members)
        from anon, authenticated, public;
 
-grant execute on function fc_join(text) to anon, authenticated;
+grant execute on function fc_join(text,text) to anon, authenticated;
+grant execute on function fc_login(text,text) to anon, authenticated;
+grant execute on function fc_set_pin(uuid,text) to anon, authenticated;
 grant execute on function fc_login_by_token(uuid) to anon, authenticated;
 grant execute on function fc_admin_claim(text) to anon, authenticated;
 grant execute on function fc_admin_login(text) to anon, authenticated;
