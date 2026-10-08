@@ -868,6 +868,8 @@ function hotScore(post, now = Date.now()) {
 | **청소하기** | 부모 글 없는 댓글·공감 문서 일괄 삭제, `likeCount`/`commentCount` 전건 재계산, `meta_site` 갱신 | 배치 `update`/`delete` |
 | **닉네임 밴** | 해당 멤버의 글·댓글 전부 숨김 + `members` 문서에 `banned: true` 추가(스키마 확장) → 부팅 시 읽기 전용으로 전환 | `update` |
 
+| **회원 관리** | 이름 검색(정규화 키 부분일치) + 거르개 `전체 / 차단 중 / 경고 있음 / 인사 전`. 50명씩 그리고 `더 보기`. 목록은 한 번 받아 화면에서만 거른다 | `fc_admin_members(token)` 1회 + 클라이언트 필터 |
+
 **어드민 UI 원칙**
 - 관리 버튼은 `role === 'admin'` 일 때만 **DOM에 생성**한다. 숨기기(`display:none`)가 아니라 안 만든다.
 - 파괴적 동작(삭제·밴)은 전부 M11 확인 다이얼로그를 거친다. 범쨩도 손이 미끄러진다.

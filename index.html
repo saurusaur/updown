@@ -773,7 +773,13 @@ dialog::backdrop{
   <button class="sheet-close" type="button" data-close aria-label="닫기">&times;</button>
   <h2>회원 관리</h2>
   <p class="t-meta">차단하면 그분의 글과 댓글이 전부 가려지고, 아무것도 못 쓰게 됩니다.</p>
-  <div id="memberBody" style="margin-top:var(--s4)"></div>
+  <div class="field" style="margin-top:var(--s3)">
+    <label for="memberSearch">이름으로 찾기</label>
+    <input id="memberSearch" type="search" autocomplete="off" placeholder="닉네임 일부만 쳐도 돼요">
+  </div>
+  <div class="chips" id="memberFilter" style="margin-top:var(--s2)"></div>
+  <p class="t-meta" id="memberCount" style="margin-top:var(--s2)"></p>
+  <div id="memberBody" style="margin-top:var(--s3)"></div>
 </div></dialog>
 
 <dialog id="dlgReports"><div class="sheet">
@@ -2164,12 +2170,70 @@ async function changePin(){
 }
 
 /* --- 범쨩 : 회원 관리 ---------------------------------------------- */
+/* 회원 목록은 한 번 받아두고, 검색과 거르개는 받아둔 것 안에서만 돈다.
+   사람이 늘어도 한 번에 50명씩만 그린다. */
+let memberRows=[], memberShown=50;
+const MEMBER_FILTERS=[
+  ['all','전체',       ()=>true],
+  ['banned','차단 중', m=>!!m.bannedUntil],
+  ['warned','경고 있음', m=>m.warnings>0],
+  ['quiet','인사 전',   m=>!m.greetedAt],
+];
+let memberFilter='all';
+
 async function openMembers(){
-  const box=$('#memberBody'); box.innerHTML='';
-  let rows=[]; try{ rows=await Api.listMembers()||[]; }catch(e){ toast(errMsg(e),'bad'); }
+  $('#memberSearch').value=''; memberFilter='all'; memberShown=50;
+  buildMemberFilters();
+  $('#memberBody').innerHTML='';
+  $('#memberCount').textContent='불러오는 중…';
   $('#dlgMembers').showModal();
-  if(!rows.length){ box.appendChild(emptyBox('아직 아무도 안 왔어요.','','','sleep')); return; }
-  rows.forEach(m=>{
+  await loadMembers();
+}
+/** 서버에서 다시 받아온다. 검색어와 거르개는 그대로 둔다. */
+async function loadMembers(){
+  try{ memberRows=await Api.listMembers()||[]; }
+  catch(e){ toast(errMsg(e),'bad'); memberRows=[]; }
+  drawMembers();
+}
+function buildMemberFilters(){
+  const box=$('#memberFilter'); box.innerHTML='';
+  MEMBER_FILTERS.forEach(([key,label])=>{
+    const b=el('button','chip',label); b.type='button';
+    b.setAttribute('aria-checked',String(key===memberFilter));
+    b.addEventListener('click',()=>{ memberFilter=key; memberShown=50;
+      [...box.children].forEach((x,i)=>
+        x.setAttribute('aria-checked',String(MEMBER_FILTERS[i][0]===key)));
+      drawMembers(); });
+    box.appendChild(b);
+  });
+}
+function drawMembers(){
+  const box=$('#memberBody'); box.innerHTML='';
+  const q=nickKey($('#memberSearch').value||'');
+  const pass=MEMBER_FILTERS.find(f=>f[0]===memberFilter)[2];
+  const hit=memberRows.filter(m=>pass(m)&&(!q||nickKey(m.nick).includes(q)));
+
+  if(!memberRows.length){ $('#memberCount').textContent='';
+    box.appendChild(emptyBox('아직 아무도 안 왔어요.','','','sleep')); return; }
+  $('#memberCount').textContent =
+    q||memberFilter!=='all'
+      ? `전체 ${memberRows.length}명 중 ${hit.length}명`
+      : `모두 ${memberRows.length}명`;
+  if(!hit.length){
+    box.appendChild(emptyBox(q?'그런 이름은 없어요. 띄어쓰기는 신경 안 쓰셔도 됩니다.'
+                              :'여기 해당하는 분이 없네요.','','','sleep'));
+    return;
+  }
+  hit.slice(0,memberShown).forEach(m=>box.appendChild(memberCard(m)));
+  if(hit.length>memberShown){
+    const more=el('button','btn btn--ghost',`${hit.length-memberShown}명 더 보기`);
+    more.type='button'; more.style.marginTop='var(--s3)';
+    more.addEventListener('click',()=>{ memberShown+=50; drawMembers(); });
+    box.appendChild(more);
+  }
+}
+function memberCard(m){
+  {
     const w=el('div','card-wrap'), c=el('div','card');
     c.innerHTML=`<div class="rep-head">
         <span class="nick">${esc(m.nick)}</span>
@@ -2185,7 +2249,8 @@ async function openMembers(){
       warn.addEventListener('click',async()=>{
         const t=await textBox('경고 보내기','그분에게만 보입니다.','',150);
         if(t===null) return;
-        try{ await Api.warn(m.id,t); toast('경고를 보냈습니다','good'); await reload(); openMembers(); }
+        try{ await Api.warn(m.id,t); toast('경고를 보냈습니다','good');
+             await reload(); await loadMembers(); }
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(warn);
       const ban=el('button','btn btn--sm btn--danger',m.bannedUntil?'차단 풀기':'계정 차단');
@@ -2194,13 +2259,13 @@ async function openMembers(){
         let days=0;
         if(!m.bannedUntil){ days=await askBanDays(m.nick); if(days===null) return; }
         try{ await Api.ban(m.id,days); toast(days?'차단했습니다':'차단을 풀었습니다','good');
-             await reload(); openMembers(); }
+             await reload(); await loadMembers(); }
         catch(e){ toast(errMsg(e),'bad'); }});
       foot.appendChild(ban);
       c.appendChild(foot);
     }
-    w.appendChild(c); box.appendChild(w);
-  });
+    w.appendChild(c); return w;
+  }
 }
 
 /* --- 받은 경고 보여주기 ---------------------------------------------- */
@@ -2379,6 +2444,9 @@ $('#moreBtn').addEventListener('click',()=>{shown+=PAGE;renderPosts();});
 $('#noticeBtn').addEventListener('click',editNotice);
 $('#reportBtn').addEventListener('click',openReports);
 $('#memberBtn').addEventListener('click',openMembers);
+/* 검색은 받아둔 목록 안에서 도니까 서버를 다시 부르지 않는다 */
+$('#memberSearch').addEventListener('input',()=>{ memberShown=50; drawMembers(); });
+$('#memberSearch').addEventListener('search',()=>{ memberShown=50; drawMembers(); });
 $('#pinBtn').addEventListener('click',changePin);
 $('#linkEditBtn').addEventListener('click',openLinkEditor);
 $('#postBody').addEventListener('input',()=>updCount('#postBody','#postCount',LIM.POST));
