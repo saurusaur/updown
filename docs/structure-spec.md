@@ -868,6 +868,7 @@ function hotScore(post, now = Date.now()) {
 | **청소하기** | 부모 글 없는 댓글·공감 문서 일괄 삭제, `likeCount`/`commentCount` 전건 재계산, `meta_site` 갱신 | 배치 `update`/`delete` |
 | **닉네임 밴** | 해당 멤버의 글·댓글 전부 숨김 + `members` 문서에 `banned: true` 추가(스키마 확장) → 부팅 시 읽기 전용으로 전환 | `update` |
 
+| **인사 댓글 숨김/삭제** | 인사에 달린 댓글도 운영자는 지울 수 있다 | `fc_delete_greeting_comment(token, id)` |
 | **회원 관리** | 이름 검색(정규화 키 부분일치) + 거르개 `전체 / 차단 중 / 경고 있음 / 인사 전`. 50명씩 그리고 `더 보기`. 목록은 한 번 받아 화면에서만 거른다 | `fc_admin_members(token)` 1회 + 클라이언트 필터 |
 
 **어드민 UI 원칙**

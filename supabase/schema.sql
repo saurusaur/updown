@@ -112,11 +112,29 @@ create table if not exists fc_reports (
   unique (member_id, target_type, target_id)
 );
 
+-- 인사에 달리는 공감과 댓글. 주접 쪽과 모양을 맞췄다.
+-- fc_greetings 의 열쇠가 member_id 라서 greeting_id 는 '인사 남긴 사람' 이다.
+create table if not exists fc_greeting_likes (
+  greeting_id bigint      not null references fc_greetings(member_id) on delete cascade,
+  member_id   bigint      not null references fc_members(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (greeting_id, member_id)   -- 한 사람이 한 번만
+);
+create table if not exists fc_greeting_comments (
+  id          bigserial primary key,
+  greeting_id bigint      not null references fc_greetings(member_id) on delete cascade,
+  member_id   bigint      not null references fc_members(id) on delete cascade,
+  body        text        not null check (char_length(body) between 1 and 200),
+  created_at  timestamptz not null default now(),
+  hidden      boolean     not null default false
+);
+
 -- --------------------------------------------- 예전 버전 정리 --
 -- 뷰와 함수의 모양이 바뀌었으므로 먼저 내린다. 스크립트를 다시 돌려도
 -- 깨지지 않게 하려는 것이고, 테이블의 데이터는 건드리지 않는다.
 drop view if exists v_members, v_posts, v_comments, v_likes,
-                    v_greetings, v_questions, v_notice, v_links cascade;
+                    v_greetings, v_questions, v_notice, v_links,
+                    v_greeting_likes, v_greeting_comments cascade;
 drop function if exists fc_join(text);
 drop function if exists fc_edit_post(uuid,bigint,text,text);
 drop function if exists fc_delete_post(uuid,bigint,text);
@@ -145,6 +163,10 @@ begin
   end if;
 end $$;
 alter table fc_members add column if not exists admin_hash text;
+-- 신고할 수 있는 대상에 '인사 댓글' 을 더한다
+alter table fc_reports drop constraint if exists fc_reports_target_type_check;
+alter table fc_reports add constraint fc_reports_target_type_check
+  check (target_type in ('post','comment','greeting','greeting_comment','question'));
 -- 예전 버전에서 범쨩 비번이 pin_hash 에 있었다면 제자리로 옮긴다
 update fc_members set admin_hash = pin_hash, pin_hash = null
  where is_admin and admin_hash is null and pin_hash is not null;
@@ -162,6 +184,8 @@ alter table fc_notices enable row level security;
 alter table fc_links enable row level security;
 alter table fc_warnings enable row level security;
 alter table fc_reports enable row level security;
+alter table fc_greeting_likes enable row level security;
+alter table fc_greeting_comments enable row level security;
 
 -- ------------------------------------------------------------------ 뷰 --
 -- 뷰는 소유자 권한으로 돌아서 RLS를 통과한다. 그래서 여기 적은 컬럼만,
@@ -190,9 +214,23 @@ create view v_likes as
   select l.post_id, m.nick_key from fc_likes l join fc_members m on m.id = l.member_id;
 
 create view v_greetings as
-  select g.member_id, m.nick, m.nick_key, g.answers, g.created_at, g.edited_at
+  select g.member_id, m.nick, m.nick_key, g.answers, g.created_at, g.edited_at,
+         (select count(*) from fc_greeting_likes    l where l.greeting_id = g.member_id) as like_count,
+         (select count(*) from fc_greeting_comments c where c.greeting_id = g.member_id
+                                                       and not c.hidden)                as comment_count
   from fc_greetings g join fc_members m on m.id = g.member_id
   where not g.hidden and (m.banned_until is null or m.banned_until <= now());
+
+create view v_greeting_likes as
+  select l.greeting_id, m.nick_key
+  from fc_greeting_likes l join fc_members m on m.id = l.member_id;
+
+create view v_greeting_comments as
+  select c.id, c.greeting_id, m.nick, m.nick_key,
+         case when c.hidden then null else c.body end as body,
+         c.created_at, c.hidden
+  from fc_greeting_comments c join fc_members m on m.id = c.member_id
+  where m.banned_until is null or m.banned_until <= now();
 
 create view v_questions as
   select q.id, m.nick, m.nick_key, q.day, q.body, q.created_at, q.answer, q.answered_at
@@ -467,6 +505,46 @@ begin
   delete from fc_comments where id = p_id;
 end $$;
 
+-- 인사에 달리는 공감과 댓글 --------------------------------------------
+create or replace function fc_toggle_greeting_like(p_token uuid, p_greeting_id bigint)
+returns json language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members; liked boolean;
+begin
+  v := fc_auth(p_token);
+  delete from fc_greeting_likes where greeting_id = p_greeting_id and member_id = v.id;
+  if found then liked := false;
+  else insert into fc_greeting_likes (greeting_id, member_id) values (p_greeting_id, v.id);
+       liked := true;
+  end if;
+  return json_build_object('liked', liked,
+    'count', (select count(*) from fc_greeting_likes where greeting_id = p_greeting_id));
+end $$;
+
+create or replace function fc_create_greeting_comment(p_token uuid, p_greeting_id bigint, p_body text)
+returns bigint language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members; new_id bigint;
+begin
+  v := fc_auth(p_token);
+  if v.greeted_at is null then raise exception 'NEED_GREET'; end if;
+  insert into fc_greeting_comments (greeting_id, member_id, body)
+  values (p_greeting_id, v.id, btrim(p_body)) returning id into new_id;
+  return new_id;
+end $$;
+
+create or replace function fc_delete_greeting_comment(p_token uuid, p_id bigint)
+returns void language plpgsql security definer
+set search_path = public, extensions as $$
+declare v fc_members; owner bigint;
+begin
+  v := fc_auth(p_token);
+  select member_id into owner from fc_greeting_comments where id = p_id;
+  if owner is null then raise exception 'NOT_FOUND'; end if;
+  if owner <> v.id and not v.is_admin then raise exception 'NOT_MINE'; end if;
+  delete from fc_greeting_comments where id = p_id;
+end $$;
+
 -- 팬미팅 : 하루 한 장은 (사람, 한국 날짜) 유니크가 막는다 -----------------
 create or replace function fc_create_question(p_token uuid, p_body text)
 returns bigint language plpgsql security definer
@@ -618,6 +696,10 @@ begin perform fc_need_admin(p_token);
   left join fc_members a on a.id = case
         when r.target_type = 'post'    then (select p.member_id from fc_posts    p where p.id = r.target_id)
         when r.target_type = 'comment' then (select c.member_id from fc_comments c where c.id = r.target_id)
+        when r.target_type = 'greeting_comment'
+          then (select gc.member_id from fc_greeting_comments gc where gc.id = r.target_id)
+        when r.target_type = 'greeting'
+          then (select g.member_id from fc_greetings g where g.member_id = r.target_id)
       end
   order by r.created_at desc;
 end $$;
@@ -634,11 +716,14 @@ grant select on v_comments to anon, authenticated;
 grant select on v_likes to anon, authenticated;
 grant select on v_greetings to anon, authenticated;
 grant select on v_questions to anon, authenticated;
+grant select on v_greeting_likes to anon, authenticated;
+grant select on v_greeting_comments to anon, authenticated;
 grant select on v_notice to anon, authenticated;
 grant select on v_links to anon, authenticated;
 
 revoke all on fc_members, fc_posts, fc_comments, fc_likes, fc_greetings,
-              fc_questions, fc_notices, fc_links, fc_reports, fc_warnings
+              fc_questions, fc_notices, fc_links, fc_reports, fc_warnings,
+              fc_greeting_likes, fc_greeting_comments
        from anon, authenticated;
 
 -- 내부용 보조 함수는 바깥에 노출하지 않는다
@@ -659,6 +744,9 @@ grant execute on function fc_delete_post(uuid,bigint) to anon, authenticated;
 grant execute on function fc_toggle_like(uuid,bigint) to anon, authenticated;
 grant execute on function fc_create_comment(uuid,bigint,text) to anon, authenticated;
 grant execute on function fc_delete_comment(uuid,bigint) to anon, authenticated;
+grant execute on function fc_toggle_greeting_like(uuid,bigint) to anon, authenticated;
+grant execute on function fc_create_greeting_comment(uuid,bigint,text) to anon, authenticated;
+grant execute on function fc_delete_greeting_comment(uuid,bigint) to anon, authenticated;
 grant execute on function fc_create_question(uuid,text) to anon, authenticated;
 grant execute on function fc_report(uuid,text,bigint,text) to anon, authenticated;
 grant execute on function fc_admin_hide_post(uuid,bigint,boolean,text) to anon, authenticated;
