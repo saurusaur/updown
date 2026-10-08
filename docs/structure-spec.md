@@ -1024,7 +1024,7 @@ const LINKS=[
   {key:'instagram',platform:'인스타그램',          icon:'ig',   url:'https://www.instagram.com/geumsaemtang',
    desc:'가장 빠르게 만나는 실시간 금샘탕 소식'},
   {key:'blog',     platform:'블로그',              icon:'blog', url:'https://m.blog.naver.com/miontang',
-   desc:'사우나 마니아의 꿀팁들을 볼 수 있어요'},
+   desc:'사우나 마니아의 꿀팁과 주저리를 볼 수 있어요'},
   {key:'youtube',  platform:'유튜브',              icon:'yt',   url:'https://youtube.com/@geumsaemtang',
    desc:'요즘 좀 조용해요. 사장님의 예전이 궁금하다면?'},
   {key:'book',     platform:'집앞목욕탕 금샘탕편', icon:'book', url:'https://m.yes24.com/goods/detail/128861165',
