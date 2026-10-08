@@ -438,7 +438,7 @@ dialog::backdrop{
       </h1>
       <div class="steam steam-r" aria-hidden="true" data-steam></div>
     </div>
-    <p class="hero-sub">금샘탕을 운영하시는 강다운 사장님을 좋아하는 사람들이 모여서 주접 떠는 곳이에요</p>
+    <p class="hero-sub">금샘탕을 운영하시는 강다운 사장님을 좋아하는 사람들이 모여 주접 떠는 곳이에요.</p>
 
     <div class="toolbar">
       <button class="btn btn--sm" type="button" id="rulesBtn">활동 규칙</button>
@@ -493,7 +493,7 @@ dialog::backdrop{
 
         <section id="fanmeeting">
           <div class="sec-head"><h2>팬미팅</h2><span class="line"></span></div>
-          <p class="sec-sub">사장님한테 여쭤보는 칸이에요. 하루에 딱 한 장만 받습니다. 아껴 쓰세요.<br>
+          <p class="sec-sub">사장님께 여쭤보는 칸이에요. 하루에 딱 한 장만 받습니다. 아껴 쓰세요.<br>
              사장님이 들르셔서 댓글로 답해주시거나 금샘탕 계정에 올려주실 수도 있어요.</p>
           <div class="card-wrap" style="margin-bottom:var(--s3);">
             <div class="card">
@@ -516,7 +516,7 @@ dialog::backdrop{
 
         <section id="links">
           <div class="sec-head"><h2>사장님 활동 페이지</h2><span class="line"></span></div>
-          <p class="sec-sub">사장님이 직접 굴리시는 곳들이에요. 주접만 떨고 가면 섭섭하잖아요.</p>
+          <p class="sec-sub">사장님이 직접 챙기시는 곳들이에요. 주접만 떨고 가면 섭섭하잖아요.</p>
           <div class="stack" id="linkList"></div>
           <div class="row" style="margin-top:var(--s4)" id="linkAdminRow" hidden>
             <button class="btn btn--sm" type="button" id="linkEditBtn">링크 주소 채우기</button>
@@ -604,8 +604,7 @@ dialog::backdrop{
   <h2>업다운 팬클럽 이용 안내</h2>
   <p class="t-hand" style="margin-top:var(--s2)">
     여긴 마음 좀 풀어놓는 곳이지만,<br>
-    탕에도 지켜야 할 게 있듯이 여기도 몇 가지만 있어요.<br>
-    길게 안 씁니다. 여덟 줄만 읽고 들어오세요.</p>
+    탕에도 지켜야 할 게 있듯이 여기도 몇 가지가 있어요.</p>
   <ol class="body" style="padding-left:1.2em;gap:var(--s3)" id="ruleList"></ol>
   <p class="t-meta" style="margin-top:var(--s5)">
     어기면 조용히 냉탕으로 모십니다. (글 숨김 또는 삭제)<br>
@@ -618,8 +617,8 @@ dialog::backdrop{
 <dialog id="dlgGreet"><form method="dialog" class="sheet">
   <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
   <h2>인사해요</h2>
-  <p class="t-meta">한 줄씩만 남겨주시면 돼요. 잘 쓸 필요 전혀 없고요,<br>
-     이거 쓰시면 바로 주접 쓰실 수 있게 열립니다.</p>
+  <p class="t-meta">한 줄씩만 남겨주시면 돼요. 잘 쓰실 필요 없습니다.<br>
+     이것만 쓰시면 바로 주접을 쓰실 수 있어요.</p>
   <div class="body" id="greetFields"></div>
   <div class="actions">
     <button class="btn" value="cancel" type="submit">나중에</button>
@@ -680,7 +679,7 @@ dialog::backdrop{
 <dialog id="dlgLinks"><form method="dialog" class="sheet">
   <button class="sheet-close" value="cancel" aria-label="닫기">&times;</button>
   <h2>링크 주소 채우기</h2>
-  <p class="t-meta">주소를 넣은 카드만 페이지에 보입니다. 비워두면 안 보여요. 죽은 링크가 제일 없어 보이니까요.</p>
+  <p class="t-meta">주소를 넣은 카드만 페이지에 보입니다. 비워두면 카드가 안 생겨요. 안 열리는 링크를 두는 것보다 낫거든요.</p>
   <div class="body" id="linkFields"></div>
   <div class="actions">
     <button class="btn" value="cancel" type="submit">취소</button>
@@ -854,11 +853,11 @@ const Me={
     return false; },
 };
 const GATE={
-  guest:'이름표 하나만 달고 오세요. 누가 눌렀는지는 알아야 하니까.. 30초면 끝나요.',
+  guest:'이름표 하나만 달고 오세요. 누가 눌렀는지는 알아야 하니까요. 30초면 끝나요.',
   member:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
-  notMine:'그건 쓰신 분 거예요. 거슬리면 신고 눌러주세요, 범쨩이 봅니다.',
-  guestQ:'사장님께 질문 넣으려면 이름표가 필요해요. 익명으로 물어보면 사장님이 누구한테 답하시겠어요..',
-  memberQ:'팬미팅은 인사 마친 분들만 들어올 수 있어요. 먼저 통성명부터 하시죠.',
+  notMine:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 범쨩이 확인합니다.',
+  guestQ:'사장님께 질문을 넣으려면 이름표가 필요해요. 익명으로 물으면 사장님이 누구한테 답하시겠어요.',
+  memberQ:'팬미팅은 인사를 마친 분들만 들어올 수 있어요. 먼저 통성명부터 하시죠.',
 };
 
 
@@ -873,25 +872,25 @@ const SUPABASE={
 
 const ERR={
   NICK_TAKEN:'그 이름은 벌써 누가 찜했어요. 본인이시면 비번을 넣어주세요.',
-  NO_PIN:'이 이름표엔 비번이 없어요. 처음 쓰시던 기기에서 열어주세요.',
-  PIN_EXISTS:'비번은 이미 정해져 있어요',
-  NICK_LEN:'두 글자는 넘기고 열두 글자는 넘기지 말아주세요',
-  NICK_CHARS:'한글, 영문, 숫자랑 . _ - 만 쓸 수 있어요.',
+  NO_PIN:'이 이름표에는 비번이 없어요. 처음 쓰시던 기기에서 열어주세요.',
+  PIN_EXISTS:'비번은 이미 정해두셨어요.',
+  NICK_LEN:'이름은 두 글자에서 열두 글자 사이로 해주세요.',
+  NICK_CHARS:'한글, 영문, 숫자와 . _ - 만 쓸 수 있어요.',
   NICK_BANNED:'그 이름은 오해 살 수 있어서 못 써요. 다른 걸로!',
-  ADMIN_RESERVED:'범쨩은 예약된 이름이에요',
-  NO_MEMBER:'그런 이름표는 없어요',
-  BAD_PIN:'비번이 안 맞아요',
-  PIN_FORMAT:'숫자로만 채워주세요',
+  ADMIN_RESERVED:'범쨩은 예약된 이름이에요.',
+  NO_MEMBER:'그런 이름표는 없어요.',
+  BAD_PIN:'비번이 맞지 않아요.',
+  PIN_FORMAT:'숫자로만 넣어주세요.',
   ADMIN_EXISTS:'범쨩은 이미 등록돼 있어요. 비번으로 들어오세요.',
-  NOT_ADMIN:'범쨩만 할 수 있어요',
-  NOT_MINE:'그건 쓰신 분 거예요. 거슬리면 신고 눌러주세요, 범쨩이 봅니다.',
+  NOT_ADMIN:'범쨩만 할 수 있어요.',
+  NOT_MINE:'그건 쓰신 분 거예요. 거슬리면 신고를 눌러주세요. 범쨩이 확인합니다.',
   NEED_GREET:'아직 인사를 안 하셨네요! 여긴 인사부터 하고 주접 떠는 곳이에요.',
   COOLDOWN:'조금만 쉬었다 가요. 1분 뒤에 다시 쓰실 수 있어요.',
-  DAILY_LIMIT:'오늘 질문은 이미 한 장 쓰셨어요. 자정 지나면 새 걸로 드립니다.',
+  DAILY_LIMIT:'오늘 질문은 이미 한 장 쓰셨어요. 자정이 지나면 새로 한 장 드려요.',
   NO_SESSION:'이름표가 풀렸어요. 다시 달아주세요.',
   BANNED:'지금은 냉탕에 계십니다.',
-  GREET_SHORT:'앞의 두 개만 채워주시면 돼요. 정말 두 줄이면 끝나요.',
-  NOT_FOUND:'이미 없는 글이에요',
+  GREET_SHORT:'앞의 두 개만 채워주시면 돼요. 정말 두 줄이면 끝납니다.',
+  NOT_FOUND:'이미 사라진 글이에요.',
 };
 /** 서버가 올린 코드를 사람 말로. 모르는 코드면 원문을 그대로 보여준다. */
 function errMsg(e){
@@ -1184,16 +1183,16 @@ function hash32(str){
 /* --- 카피 ------------------------------------------------------- */
 const RULES=[
   ['때는 밀어도 마음은 밀지 말기','욕설, 비꼬기, 저격 금지. 여긴 열탕이지 싸움판이 아니에요.'],
-  ['얼굴 보고 못 할 말은 여기서도 금지','딱 하나 예외는 사이버 고백. 여기에선 용기내어 마음껏 고백하세요.'],
-  ['신상은 사물함에 넣고 잠그기','사장님이든 직원분이든 옆자리 손님이든, 실명·연락처·주소·얼굴 사진은 안 돼요. 들어오실 때 두고 오시면 됩니다.'],
-  ['불편할 질문은 접어두기','궁금한 건 팬미팅에서 마음껏 여쭤보세요. 다만 사장님이 듣고 곤란하실 것 같으면 그건 선 넘은 온도예요.'],
+  ['얼굴 보고 못 할 말은 여기서도 금지','딱 하나 예외는 사이버 고백. 여기선 용기 내서 마음껏 고백하세요.'],
+  ['신상은 사물함에 넣고 잠그기','사장님이든 직원분이든 옆자리 손님이든, 실명·연락처·주소·얼굴 사진은 안 돼요.'],
+  ['불편한 질문은 접어두기','궁금한 건 팬미팅에서 마음껏 여쭤보세요. 다만 사장님이 곤란해하실 것 같은 질문은 선 넘은 온도예요.'],
   ['홍보는 다른 탕에서','장사, 링크 뿌리기, 맞팔 품앗이 금지. 여긴 사장님 주접만 취급합니다.'],
-  ['실제 금샘탕에선 조용한 사우너로','온라인에서 아무리 뜨거워도 매장에선 인사 한 번이면 충분해요. 사진은 찍기 전에 꼭 여쭤보고, 탈의 구역은 무조건 금지.'],
-  ['주접은 진하게, 도배는 얇게','같은 글 반복, 연속 업로드 금지. 사우나도 쉬어가면서 해야 오래 갑니다.'],
-  ['이상하면 신고, 판단은 범쨩이','신고 버튼 한 번이면 범쨩이 보고 숨기거나 지웁니다. 직접 싸우지 말고 그냥 누르세요.'],
+  ['실제 금샘탕에선 조용한 사우너로','온라인에서 아무리 뜨거워도 매장에선 인사 한 번이면 충분해요. 사진은 찍기 전에 꼭 여쭤보시고, 탈의 구역에선 무조건 안 됩니다.'],
+  ['주접은 진하게, 도배는 얇게','같은 글 반복, 연달아 올리기 금지. 사우나도 쉬어가면서 해야 오래 갑니다.'],
+  ['이상하면 신고, 판단은 범쨩이','신고 버튼 한 번이면 범쨩이 보고 숨기거나 지웁니다. 직접 맞붙지 마시고 그냥 눌러주세요.'],
 ];
 const GREET_Q=[
-  {k:'q1',label:'사장님한테 처음 반한 순간은 언제예요?',hint:'입덕 계기. 거창할 필요 없어요.',req:true,
+  {k:'q1',label:'사장님께 처음 반한 순간은 언제예요?',hint:'입덕 계기. 거창할 필요 없어요.',req:true,
    ph:'수건 건네주시는 손이 따뜻해서요. 그날로 끝났습니다.'},
   {k:'q2',label:'사장님의 어디가 제일 좋아요?',hint:'최애 포인트 하나만.',req:true,
    ph:'탕 온도 물어보면 1도 단위로 알려주시는 그 프로 정신..'},
@@ -1203,7 +1202,7 @@ const GREET_Q=[
    ph:'열탕 3분 냉탕 1분 무한반복파. 건식은 90도부터 인정합니다'},
 ];
 /* 실제 주소는 확인이 안 돼서 비워둔다. 범쨩이 페이지에서 직접 채운다.
-   주소가 빈 카드는 렌더에서 빠진다 — 죽은 링크가 제일 없어 보인다. */
+   주소가 빈 카드는 렌더에서 빠진다 — 안 열리는 링크를 두느니 안 보이는 게 낫다. */
 const LINKS=[
   {key:'marpple',platform:'마플샵 스토어',icon:'shop',url:'https://marpple.shop/kr/geumsaemtang',
    desc:'금샘탕 키링이랑 입장료 할인되는 티셔츠 구경하기'},
@@ -1307,7 +1306,7 @@ function postCard(p,{hot}={}){
   const foot=el('div','foot');
   const like=el('button','like'); like.type='button';
   like.setAttribute('aria-pressed',liked?'true':'false');
-  like.setAttribute('aria-label','공감 '+likeN+'개');
+  like.setAttribute('aria-label','사우나돌 '+likeN+'개');
   like.innerHTML=`<span class="puff" aria-hidden="true">${ART.steam_b}</span>`
     +stoneSVG(p.id,likeN,24)+`<span class="n">${likeN}</span>`;
   like.addEventListener('click',()=>toggleLike(p,like));
@@ -1380,7 +1379,7 @@ function renderGreetings(){
       const h=el('button','btn btn--sm btn--danger','숨기기');h.type='button';
       h.style.marginTop='var(--s3)';
       h.addEventListener('click',async()=>{
-        if(await confirmBox('인사 숨기기','인사를 지우면 이분 정회원 자격도 같이 풀려요.','알겠습니다','취소')){
+        if(await confirmBox('인사 숨기기','인사를 지우면 이분의 정회원 자격도 같이 풀려요.','알겠습니다','취소')){
           try{ await Api.hideGreeting(g.memberId!=null?g.memberId:g._id); toast('인사를 내렸습니다'); await reload(); }
           catch(e){ toast(errMsg(e),'bad'); }
         }
@@ -1484,7 +1483,7 @@ function renderStats(){
   const rows=[
     ['입덕한 사람', DB.members.length+'명'],
     ['쌓인 주접', DB.posts.filter(p=>!p.hidden).length+'개'],
-    ['오간 공감', DB.likes.length+'번'],
+    ['올라간 사우나돌', DB.likes.length+'개'],
     ['사장님께 간 질문', DB.questions.length+'개'],
   ];
   rows.forEach(([k,v])=>{
@@ -1609,7 +1608,7 @@ function openGreet(){
       const first=!Me.row.greetedAt;
       try{ await Api.greet(ans); }
       catch(ex){ toast(errMsg(ex),'bad'); setTimeout(()=>d.showModal(),0); return; }
-      toast(first?'정식 입덕 완료! 이제 마음껏 주접 떠셔도 됩니다':'인사 고쳤어요','good');
+      toast(first?'정식 입덕 완료! 이제 마음껏 주접 떠셔도 됩니다.':'인사 고쳤어요.','good');
       await reload(); renderAll(); res(true);
     };
     d.showModal();
@@ -1873,7 +1872,7 @@ async function boot(){
       /* 아티팩트처럼 바깥으로 못 나가는 곳이 있다. 글이 안 보이는 채로
          두기보다 저장소를 바꾸고 솔직히 알린다. */
       Api=ApiDoc; mode=await Api.init();
-      toast('서버에 못 닿아서 이 기기에만 저장되는 모드로 엽니다.','bad');
+      toast('서버에 닿지 못해서 이 기기에만 저장되는 모드로 엽니다.','bad');
     }
   }
 
